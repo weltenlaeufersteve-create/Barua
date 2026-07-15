@@ -49,13 +49,14 @@ body {
   font-size: 14px;
 }
 
+/* All text buttons share one shape: pill (fully round). */
 .btn {
   width: 100%;
   padding: 10px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   border: none;
-  background: var(--acc-blue);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -64,6 +65,20 @@ body {
 .btn:hover {
   opacity: 0.9;
 }
+
+/* Account-context buttons: border in the account's colour, no account fill —
+   only a light theme fill. The account colour is applied inline (style="border-color:…"). */
+.btn-account {
+  border: 1.5px solid var(--border);
+  background: var(--hover-bg);
+  color: var(--text-primary);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+}
+.btn-account:hover { background: var(--selected-bg); }
 
 .error {
   color: var(--acc-pink);

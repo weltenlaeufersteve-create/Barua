@@ -63,6 +63,8 @@ function sidebarIcon(string $name): string
         'newsletters'   => '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
         'notifications' => '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
         'starred'       => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        'settings'      => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+        'logout'        => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
     ];
     $inner = $paths[$name] ?? '';
     return '<svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' . $inner . '</svg>';
@@ -109,12 +111,12 @@ foreach ($rows as $row) {
       <div class="mobile-back" data-go="list">‹ Inbox</div>
       <div class="sidebar__title">Barua</div>
 
-      <a href="/" class="sidebar__item<?= ($view === 'inbox' && $activeAccount === null) ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count"><?= $totalUnread ?: '' ?></span></a>
+      <a href="/" class="sidebar__item<?= $activeAccount === null ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count"><?= $totalUnread ?: '' ?></span></a>
 
       <div class="sidebar__divider"></div>
 
       <?php foreach ($accounts as $acc): ?>
-        <a href="<?= htmlspecialchars($buildUrl((int) $acc['id'], $view)) ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
+        <a href="<?= htmlspecialchars($buildUrl((int) $acc['id'], $view)) ?>" data-account="<?= (int) $acc['id'] ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
           <span class="account-avatar" style="background: <?= htmlspecialchars($acc['colour']) ?>"><?= htmlspecialchars(mb_strtoupper(mb_substr($acc['label'], 0, 1))) ?></span>
           <?= htmlspecialchars($acc['label']) ?>
           <?php if ((int) $acc['unread'] > 0): ?>
@@ -139,8 +141,9 @@ foreach ($rows as $row) {
       <div class="sidebar__item"><?= sidebarIcon('starred') ?> Starred</div>
 
       <div class="sidebar__spacer"></div>
-      <div class="sidebar__item" id="open-settings">⚙ Settings</div>
-      <a href="/logout" class="sidebar__item">Sign out</a>
+      <div class="sidebar__divider"></div>
+      <div class="sidebar__item" id="open-settings"><?= sidebarIcon('settings') ?> Settings</div>
+      <a href="/logout" class="sidebar__item"><?= sidebarIcon('logout') ?> Sign out</a>
     </div>
 
     <!-- Mail list -->

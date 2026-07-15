@@ -48,10 +48,10 @@ foreach ($composeAccounts as $ca) {
   .compose-main__header h2 { font-size: 17px; font-weight: 700; margin: 0; }
   .compose-main__spacer { flex: 1; }
   .compose__send {
-    background: var(--acc-blue); border: none; color: #fff; font-weight: 600;
-    border-radius: var(--radius-sm); padding: 9px 22px; font-size: 13.5px; cursor: pointer;
+    background: var(--hover-bg); border: 1.5px solid var(--border); color: var(--text-primary);
+    font-weight: 600; border-radius: 999px; padding: 9px 22px; font-size: 13.5px; cursor: pointer;
   }
-  .compose__send:hover { opacity: 0.92; }
+  .compose__send:hover { background: var(--selected-bg); }
   .compose__send:disabled { opacity: 0.5; cursor: default; }
   .compose__status { font-size: 12.5px; color: var(--text-tertiary); }
   .compose__status.is-error { color: var(--acc-pink); }
@@ -199,8 +199,8 @@ foreach ($composeAccounts as $ca) {
       accountRows.forEach(function (r) { r.classList.remove('is-active'); });
       row.classList.add('is-active');
       currentFromId = row.dataset.accountId;
-      // Send button + focus colour follow the account.
-      sendBtn.style.background = row.dataset.colour;
+      // Send button border follows the account colour (outline, light theme fill).
+      sendBtn.style.borderColor = row.dataset.colour;
       // Mini-mode sender indicator.
       document.getElementById('mini-dot').style.background = row.dataset.colour;
       document.getElementById('mini-name').textContent = row.querySelector('.compose-account__name').textContent;

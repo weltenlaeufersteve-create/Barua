@@ -1,7 +1,8 @@
 /* =========================================================================
-   Theme palettes — switchable via [data-theme] on <html>.
-   dark (default) · light · aubergine · sand · stahlblau
-   All colours in oklch. Account accent colours are theme-independent.
+   Theme palettes — switchable via [data-theme="<mode>-<tint>"] on <html>.
+   mode: light | dark      tint: neutral | sand | aubergine | steel
+   8 combinations. All colours in oklch. Account accent colours are
+   theme-independent. Default (:root) = dark-neutral.
    ========================================================================= */
 
 :root {
@@ -19,9 +20,11 @@
   --font-sans: "Inter", -apple-system, 'Segoe UI', system-ui, sans-serif;
 }
 
-/* ---------- Dark (default) ---------- */
+/* ================= DARK ================= */
+
+/* Dark · Neutral (default) */
 :root,
-[data-theme="dark"] {
+[data-theme="dark-neutral"] {
   --bg:             oklch(0.16 0.004 260);
   --sidebar-bg:     oklch(0.185 0.004 260);
   --list-bg:        oklch(0.17 0.004 260);
@@ -36,28 +39,32 @@
   --overlay:        rgba(0, 0, 0, 0.55);
   --switch-track:   oklch(0.32 0.008 260);
   --switch-knob:    oklch(0.9 0.004 260);
+  --accent:         oklch(0.8 0.07 260);
+  --accent-text:    oklch(0.25 0.03 260);
 }
 
-/* ---------- Light ---------- */
-[data-theme="light"] {
-  --bg:             oklch(0.985 0.002 260);
-  --sidebar-bg:     oklch(0.97 0.003 260);
-  --list-bg:        oklch(0.98 0.002 260);
-  --reader-bg:      oklch(0.99 0.002 260);
-  --border:         oklch(0.88 0.004 260);
-  --text-primary:   oklch(0.22 0.005 260);
-  --text-secondary: oklch(0.45 0.006 260);
-  --text-tertiary:  oklch(0.6 0.006 260);
-  --hover-bg:       oklch(0.93 0.004 260);
-  --selected-bg:    oklch(0.91 0.006 260);
-  --input-bg:       oklch(0.96 0.003 260);
-  --overlay:        rgba(20, 20, 25, 0.35);
-  --switch-track:   oklch(0.85 0.006 260);
-  --switch-knob:    oklch(0.99 0.002 260);
+/* Dark · Sand (warm) — new */
+[data-theme="dark-sand"] {
+  --bg:             oklch(0.17 0.014 80);
+  --sidebar-bg:     oklch(0.2 0.016 80);
+  --list-bg:        oklch(0.18 0.015 80);
+  --reader-bg:      oklch(0.16 0.013 80);
+  --border:         oklch(0.34 0.02 80 / 0.55);
+  --text-primary:   oklch(0.92 0.014 85);
+  --text-secondary: oklch(0.72 0.018 85);
+  --text-tertiary:  oklch(0.56 0.018 82);
+  --hover-bg:       oklch(0.25 0.02 80);
+  --selected-bg:    oklch(0.29 0.024 80);
+  --input-bg:       oklch(0.22 0.018 80);
+  --overlay:        rgba(20, 15, 5, 0.6);
+  --switch-track:   oklch(0.38 0.025 80);
+  --switch-knob:    oklch(0.9 0.015 85);
+  --accent:         oklch(0.83 0.09 82);
+  --accent-text:    oklch(0.28 0.04 70);
 }
 
-/* ---------- Aubergine (dark pastel) ---------- */
-[data-theme="aubergine"] {
+/* Dark · Aubergine */
+[data-theme="dark-aubergine"] {
   --bg:             oklch(0.19 0.032 340);
   --sidebar-bg:     oklch(0.225 0.038 340);
   --list-bg:        oklch(0.205 0.034 340);
@@ -72,28 +79,12 @@
   --overlay:        rgba(20, 8, 22, 0.6);
   --switch-track:   oklch(0.4 0.06 340);
   --switch-knob:    oklch(0.9 0.03 330);
+  --accent:         oklch(0.8 0.1 340);
+  --accent-text:    oklch(0.25 0.05 340);
 }
 
-/* ---------- Sand (warm, light) ---------- */
-[data-theme="sand"] {
-  --bg:             oklch(0.94 0.018 80);
-  --sidebar-bg:     oklch(0.915 0.022 78);
-  --list-bg:        oklch(0.93 0.02 80);
-  --reader-bg:      oklch(0.955 0.015 82);
-  --border:         oklch(0.8 0.03 78);
-  --text-primary:   oklch(0.32 0.03 70);
-  --text-secondary: oklch(0.5 0.035 72);
-  --text-tertiary:  oklch(0.63 0.035 75);
-  --hover-bg:       oklch(0.88 0.03 78);
-  --selected-bg:    oklch(0.85 0.04 76);
-  --input-bg:       oklch(0.9 0.025 80);
-  --overlay:        rgba(60, 45, 20, 0.32);
-  --switch-track:   oklch(0.78 0.04 76);
-  --switch-knob:    oklch(0.98 0.01 82);
-}
-
-/* ---------- Steel Blue (Weltenläufer #394D57) ---------- */
-[data-theme="stahlblau"] {
+/* Dark · Steel Blue */
+[data-theme="dark-steel"] {
   --bg:             oklch(0.26 0.018 245);
   --sidebar-bg:     oklch(0.3 0.022 245);
   --list-bg:        oklch(0.28 0.02 245);
@@ -108,4 +99,88 @@
   --overlay:        rgba(10, 18, 26, 0.6);
   --switch-track:   oklch(0.46 0.04 245);
   --switch-knob:    oklch(0.9 0.02 245);
+  --accent:         oklch(0.82 0.08 245);
+  --accent-text:    oklch(0.25 0.04 245);
+}
+
+/* ================= LIGHT ================= */
+
+/* Light · Neutral */
+[data-theme="light-neutral"] {
+  --bg:             oklch(0.985 0.002 260);
+  --sidebar-bg:     oklch(0.97 0.003 260);
+  --list-bg:        oklch(0.98 0.002 260);
+  --reader-bg:      oklch(0.99 0.002 260);
+  --border:         oklch(0.88 0.004 260);
+  --text-primary:   oklch(0.22 0.005 260);
+  --text-secondary: oklch(0.45 0.006 260);
+  --text-tertiary:  oklch(0.6 0.006 260);
+  --hover-bg:       oklch(0.93 0.004 260);
+  --selected-bg:    oklch(0.91 0.006 260);
+  --input-bg:       oklch(0.96 0.003 260);
+  --overlay:        rgba(20, 20, 25, 0.35);
+  --switch-track:   oklch(0.85 0.006 260);
+  --switch-knob:    oklch(0.99 0.002 260);
+  --accent:         oklch(0.62 0.12 260);
+  --accent-text:    oklch(0.99 0 0);
+}
+
+/* Light · Sand (warm) */
+[data-theme="light-sand"] {
+  --bg:             oklch(0.94 0.018 80);
+  --sidebar-bg:     oklch(0.915 0.022 78);
+  --list-bg:        oklch(0.93 0.02 80);
+  --reader-bg:      oklch(0.955 0.015 82);
+  --border:         oklch(0.8 0.03 78);
+  --text-primary:   oklch(0.32 0.03 70);
+  --text-secondary: oklch(0.5 0.035 72);
+  --text-tertiary:  oklch(0.63 0.035 75);
+  --hover-bg:       oklch(0.88 0.03 78);
+  --selected-bg:    oklch(0.85 0.04 76);
+  --input-bg:       oklch(0.9 0.025 80);
+  --overlay:        rgba(60, 45, 20, 0.32);
+  --switch-track:   oklch(0.78 0.04 76);
+  --switch-knob:    oklch(0.98 0.01 82);
+  --accent:         oklch(0.6 0.1 70);
+  --accent-text:    oklch(0.99 0 0);
+}
+
+/* Light · Aubergine — new */
+[data-theme="light-aubergine"] {
+  --bg:             oklch(0.975 0.01 340);
+  --sidebar-bg:     oklch(0.955 0.014 340);
+  --list-bg:        oklch(0.97 0.012 340);
+  --reader-bg:      oklch(0.985 0.008 340);
+  --border:         oklch(0.86 0.02 340);
+  --text-primary:   oklch(0.28 0.03 340);
+  --text-secondary: oklch(0.47 0.03 340);
+  --text-tertiary:  oklch(0.62 0.028 340);
+  --hover-bg:       oklch(0.92 0.02 340);
+  --selected-bg:    oklch(0.89 0.028 340);
+  --input-bg:       oklch(0.95 0.014 340);
+  --overlay:        rgba(40, 10, 35, 0.3);
+  --switch-track:   oklch(0.8 0.03 340);
+  --switch-knob:    oklch(0.99 0.008 340);
+  --accent:         oklch(0.58 0.15 340);
+  --accent-text:    oklch(0.99 0 0);
+}
+
+/* Light · Steel Blue — new */
+[data-theme="light-steel"] {
+  --bg:             oklch(0.975 0.008 245);
+  --sidebar-bg:     oklch(0.955 0.012 245);
+  --list-bg:        oklch(0.968 0.01 245);
+  --reader-bg:      oklch(0.985 0.006 245);
+  --border:         oklch(0.86 0.018 245);
+  --text-primary:   oklch(0.26 0.024 245);
+  --text-secondary: oklch(0.46 0.026 245);
+  --text-tertiary:  oklch(0.61 0.024 245);
+  --hover-bg:       oklch(0.92 0.018 245);
+  --selected-bg:    oklch(0.89 0.024 245);
+  --input-bg:       oklch(0.95 0.012 245);
+  --overlay:        rgba(10, 20, 30, 0.3);
+  --switch-track:   oklch(0.8 0.026 245);
+  --switch-knob:    oklch(0.99 0.006 245);
+  --accent:         oklch(0.55 0.12 245);
+  --accent-text:    oklch(0.99 0 0);
 }
