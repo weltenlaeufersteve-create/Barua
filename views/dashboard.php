@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Barua</title>
+<script>
+  (function () {
+    var theme = localStorage.getItem('barua_theme');
+    if (theme) document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<link rel="stylesheet" href="/css/theme.css">
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
