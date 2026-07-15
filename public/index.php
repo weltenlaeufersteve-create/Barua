@@ -54,6 +54,35 @@ if ($path === '/' || $path === '') {
     return;
 }
 
+if ($path === '/compose/send' && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    $account = AccountRepository::find((int) ($_POST['account_id'] ?? 0));
+    if (!$account) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Unknown account']);
+        return;
+    }
+    $result = \Barua\Mail\MailSender::send($account, [
+        'to'          => $_POST['to'] ?? '',
+        'cc'          => $_POST['cc'] ?? '',
+        'bcc'         => $_POST['bcc'] ?? '',
+        'subject'     => $_POST['subject'] ?? '',
+        'body_plain'  => $_POST['body_plain'] ?? '',
+        'in_reply_to' => $_POST['in_reply_to'] ?? '',
+        'references'  => $_POST['references'] ?? '',
+    ]);
+    if (!$result['ok']) {
+        http_response_code(502);
+    }
+    echo json_encode($result);
+    return;
+}
+
 if ($path === '/sync' && $method === 'POST') {
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
         http_response_code(403);

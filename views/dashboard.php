@@ -41,6 +41,7 @@ foreach ($rows as $row) {
         'accountId'     => (int) $row['account_id'],
         'accountLabel'  => $row['account_label'],
         'accountColour' => $row['account_colour'],
+        'messageId'     => $row['message_id'] ?? '',
         'time'          => MessageRepository::timeLabel($row['date_sent']),
         'initial'       => initial($row),
         'body'          => $body !== '' ? $body : '(No text content)',
@@ -173,8 +174,8 @@ foreach ($rows as $row) {
         ?></div>
       </div>
       <div class="reader__toolbar">
-        <button class="pill">↩ Reply</button>
-        <button class="pill">↪ Forward</button>
+        <button class="pill" id="reader-reply">↩ Reply</button>
+        <button class="pill" id="reader-forward">↪ Forward</button>
         <button class="pill">🗄 Archive</button>
       </div>
       <?php else: ?>
@@ -187,6 +188,7 @@ foreach ($rows as $row) {
 
   <script>
     var messages = <?= json_encode($jsMessages, JSON_UNESCAPED_UNICODE) ?>;
+    var currentMsgId = <?= $selected ? (int) $selected['id'] : 'null' ?>;
 
     document.querySelectorAll('.mail-row').forEach(function (row) {
       row.addEventListener('click', function () {
@@ -196,6 +198,7 @@ foreach ($rows as $row) {
 
         var msg = messages[row.dataset.msg];
         if (!msg) return;
+        currentMsgId = parseInt(row.dataset.msg, 10);
         document.getElementById('reader-subject').textContent = msg.subject || '(no subject)';
         document.getElementById('reader-body').textContent = msg.body;
         var meta = document.getElementById('reader-meta');
@@ -221,8 +224,37 @@ foreach ($rows as $row) {
         document.body.setAttribute('data-mobile-view', 'list');
       });
     });
+
+    // Reply / Forward → open the compose panel prefilled.
+    function quote(msg) {
+      return '\n\n\n----- Original message -----\n' +
+        'From: ' + msg.sender + ' <' + msg.email + '>\n' +
+        'Subject: ' + (msg.subject || '') + '\n\n' +
+        msg.body.split('\n').map(function (l) { return '> ' + l; }).join('\n');
+    }
+    var replyBtn = document.getElementById('reader-reply');
+    if (replyBtn) replyBtn.addEventListener('click', function () {
+      var msg = messages[currentMsgId];
+      if (!msg || !window.baruaCompose) return;
+      var subj = /^re:/i.test(msg.subject || '') ? msg.subject : 'Re: ' + (msg.subject || '');
+      window.baruaCompose({
+        title: 'Reply', fromAccount: msg.accountId, to: msg.email,
+        subject: subj, body: quote(msg), inReplyTo: msg.messageId, references: msg.messageId
+      });
+    });
+    var fwdBtn = document.getElementById('reader-forward');
+    if (fwdBtn) fwdBtn.addEventListener('click', function () {
+      var msg = messages[currentMsgId];
+      if (!msg || !window.baruaCompose) return;
+      var subj = /^fwd?:/i.test(msg.subject || '') ? msg.subject : 'Fwd: ' + (msg.subject || '');
+      window.baruaCompose({
+        title: 'Forward', fromAccount: msg.accountId, to: '',
+        subject: subj, body: quote(msg)
+      });
+    });
   </script>
 
   <?php require __DIR__ . '/settings_modal.php'; ?>
+  <?php require __DIR__ . '/compose.php'; ?>
 </body>
 </html>
