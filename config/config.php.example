@@ -10,6 +10,8 @@ return [
     ],
     // Generate with: bin/generate-key.php
     'app_key' => 'CHANGE_ME_32_BYTE_BASE64_KEY',
+    // Display timezone (IANA name). Messages are stored in UTC, shown in this zone.
+    'timezone' => 'Europe/Berlin',
     'auth' => [
         'username' => 'admin',
         // Generate with: php -r "echo password_hash('yourpassword', PASSWORD_DEFAULT);"
