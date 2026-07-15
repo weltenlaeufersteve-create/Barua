@@ -1,0 +1,18 @@
+{
+    "name": "weltenlaeufer/barua",
+    "description": "Self-hosted unified IMAP inbox",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "phpmailer/phpmailer": "^6.9",
+        "webklex/php-imap": "^5.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Barua\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

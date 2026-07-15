@@ -1,0 +1,18 @@
+<?php
+
+return [
+    'db' => [
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'name' => 'barua',
+        'user' => 'root',
+        'pass' => '',
+    ],
+    // Generate with: bin/generate-key.php
+    'app_key' => 'CHANGE_ME_32_BYTE_BASE64_KEY',
+    'auth' => [
+        'username' => 'admin',
+        // Generate with: php -r "echo password_hash('yourpassword', PASSWORD_DEFAULT);"
+        'password_hash' => 'CHANGE_ME',
+    ],
+];
