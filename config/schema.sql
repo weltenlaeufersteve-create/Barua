@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS accounts (
 CREATE TABLE IF NOT EXISTS messages (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   account_id INT NOT NULL,
+  folder VARCHAR(255) NOT NULL DEFAULT 'INBOX',
+  folder_role VARCHAR(20) NOT NULL DEFAULT 'inbox',
   imap_uid INT NOT NULL,
   message_id VARCHAR(500),
   in_reply_to VARCHAR(500),
@@ -42,11 +44,12 @@ CREATE TABLE IF NOT EXISTS messages (
   has_attachments TINYINT(1) DEFAULT 0,
   raw_headers TEXT,
   synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_account_uid (account_id, imap_uid),
+  UNIQUE KEY unique_account_folder_uid (account_id, folder, imap_uid),
   FULLTEXT KEY ft_search (subject, sender_name, sender_email, body_snippet),
   INDEX idx_thread (thread_id),
   INDEX idx_account_date (account_id, date_sent),
   INDEX idx_archived (is_archived, date_sent),
+  INDEX idx_role_date (folder_role, date_sent),
   CONSTRAINT fk_messages_account FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

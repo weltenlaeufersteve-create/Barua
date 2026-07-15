@@ -50,6 +50,7 @@ if ($path === '/' || $path === '') {
     $username = $_SESSION['user'];
     $csrfToken = Auth::csrfToken();
     $activeAccountId = isset($_GET['account']) ? (int) $_GET['account'] : null;
+    $view = ($_GET['view'] ?? '') === 'sent' ? 'sent' : 'inbox';
     require __DIR__ . '/../views/dashboard.php';
     return;
 }
@@ -67,7 +68,7 @@ if ($path === '/compose/send' && $method === 'POST') {
         echo json_encode(['ok' => false, 'error' => 'Unknown account']);
         return;
     }
-    $result = \Barua\Mail\MailSender::send($account, [
+    $payload = [
         'to'          => $_POST['to'] ?? '',
         'cc'          => $_POST['cc'] ?? '',
         'bcc'         => $_POST['bcc'] ?? '',
@@ -75,8 +76,12 @@ if ($path === '/compose/send' && $method === 'POST') {
         'body_plain'  => $_POST['body_plain'] ?? '',
         'in_reply_to' => $_POST['in_reply_to'] ?? '',
         'references'  => $_POST['references'] ?? '',
-    ]);
-    if (!$result['ok']) {
+    ];
+    $result = \Barua\Mail\MailSender::send($account, $payload);
+    if ($result['ok']) {
+        // MailSender already appended the copy to the IMAP Sent folder; pull it into the cache.
+        \Barua\Mail\SyncService::syncSentFolder($account);
+    } else {
         http_response_code(502);
     }
     echo json_encode($result);

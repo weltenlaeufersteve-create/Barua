@@ -4,6 +4,7 @@ namespace Barua\Mail;
 
 use Barua\Accounts\AccountRepository;
 use Barua\Database;
+use Webklex\PHPIMAP\Client;
 use Webklex\PHPIMAP\ClientManager;
 
 class SyncService
@@ -27,43 +28,60 @@ class SyncService
         return $results;
     }
 
+    /**
+     * Build a connected IMAP client for an account.
+     * The native imap extension is intentionally not loaded, so webklex's default 'utf-8'
+     * header decoder (imap_utf8/imap_mime_header_decode) silently fails on RFC 2047
+     * encoded-words. 'mimeheader' uses mb_decode_mimeheader() — pure PHP via mbstring.
+     * Header::__construct reads this from the GLOBAL ClientManager options, so it must be
+     * set on the manager, not passed to make().
+     */
+    public static function makeClient(array $account): Client
+    {
+        $cm = new ClientManager([
+            'options' => [
+                'decoder' => [
+                    'message'    => 'mimeheader',
+                    'attachment' => 'mimeheader',
+                ],
+            ],
+        ]);
+        return $cm->make([
+            'host'          => $account['imap_host'],
+            'port'          => (int) $account['imap_port'],
+            'encryption'    => $account['imap_encryption'] === 'none' ? false : $account['imap_encryption'],
+            'validate_cert' => true,
+            'username'      => $account['imap_username'],
+            'password'      => AccountRepository::decryptImapPassword($account),
+            'protocol'      => 'imap',
+            'timeout'       => 30,
+        ]);
+    }
+
     public static function syncAccount(array $account, int $limit = 50): array
     {
         $label = $account['label'];
         try {
-            // The native imap extension is intentionally not loaded, so webklex's default
-            // 'utf-8' header decoder (imap_utf8/imap_mime_header_decode) silently fails on
-            // RFC 2047 encoded-words. 'mimeheader' uses mb_decode_mimeheader() — pure PHP via
-            // mbstring. Header::__construct reads this from the GLOBAL ClientManager options,
-            // so it must be set on the manager, not passed to make().
-            $cm = new ClientManager([
-                'options' => [
-                    'decoder' => [
-                        'message'    => 'mimeheader',
-                        'attachment' => 'mimeheader',
-                    ],
-                ],
-            ]);
-            $client = $cm->make([
-                'host'          => $account['imap_host'],
-                'port'          => (int) $account['imap_port'],
-                'encryption'    => $account['imap_encryption'] === 'none' ? false : $account['imap_encryption'],
-                'validate_cert' => true,
-                'username'      => $account['imap_username'],
-                'password'      => AccountRepository::decryptImapPassword($account),
-                'protocol'      => 'imap',
-                'timeout'       => 30,
-            ]);
+            $client = self::makeClient($account);
             $client->connect();
 
-            $folder = $client->getFolder('INBOX');
-            $messages = $folder->messages()->all()->setFetchOrder('desc')->limit($limit)->get();
+            // Sync the account's INBOX and Sent folders (Archive/Trash/Drafts follow later).
+            $roles = FolderResolver::map($client);
+            $toSync = ['inbox' => $roles['inbox'] ?? $client->getFolder('INBOX')];
+            if (!empty($roles['sent'])) {
+                $toSync['sent'] = $roles['sent'];
+            }
 
+            $fetched = 0;
             $stored = 0;
-            foreach ($messages as $message) {
-                if (self::store((int) $account['id'], $message)) {
-                    $stored++;
+            foreach ($toSync as $role => $folder) {
+                $messages = $folder->messages()->all()->setFetchOrder('desc')->limit($limit)->get();
+                foreach ($messages as $message) {
+                    if (self::store((int) $account['id'], $folder->path, $role, $message)) {
+                        $stored++;
+                    }
                 }
+                $fetched += count($messages);
             }
 
             $client->disconnect();
@@ -72,13 +90,32 @@ class SyncService
             $db->prepare('UPDATE accounts SET last_synced_at = NOW() WHERE id = ?')
                ->execute([$account['id']]);
 
-            return ['account' => $label, 'ok' => true, 'fetched' => count($messages), 'stored' => $stored];
+            return ['account' => $label, 'ok' => true, 'fetched' => $fetched, 'stored' => $stored];
         } catch (\Throwable $e) {
             return ['account' => $label, 'ok' => false, 'error' => $e->getMessage()];
         }
     }
 
-    private static function store(int $accountId, $message): bool
+    /** Refresh just the Sent-folder cache for one account (called right after sending). */
+    public static function syncSentFolder(array $account, int $limit = 30): void
+    {
+        try {
+            $client = self::makeClient($account);
+            $client->connect();
+            $sent = FolderResolver::find($client, 'sent');
+            if ($sent) {
+                $messages = $sent->messages()->all()->setFetchOrder('desc')->limit($limit)->get();
+                foreach ($messages as $message) {
+                    self::store((int) $account['id'], $sent->path, 'sent', $message);
+                }
+            }
+            $client->disconnect();
+        } catch (\Throwable $e) {
+            // Non-fatal: the message was already sent; the Sent cache will catch up next sync.
+        }
+    }
+
+    private static function store(int $accountId, string $folderPath, string $folderRole, $message): bool
     {
         $uid = (int) self::scalar($message->getUid());
         if ($uid === 0) {
@@ -86,6 +123,7 @@ class SyncService
         }
 
         $from = self::firstFrom($message);
+        $recipients = self::recipientList($message);
         $messageId = self::scalar($message->getMessageId());
         $inReplyTo = self::scalar($message->getInReplyTo());
         $subject   = self::scalar($message->getSubject());
@@ -127,17 +165,19 @@ class SyncService
         $threadId = $inReplyTo !== '' ? $inReplyTo : $messageId;
 
         $sql = 'INSERT INTO messages
-                    (account_id, imap_uid, message_id, in_reply_to, thread_id, subject,
-                     sender_name, sender_email, date_sent, body_snippet, body_html, body_plain,
+                    (account_id, folder, folder_role, imap_uid, message_id, in_reply_to, thread_id, subject,
+                     sender_name, sender_email, recipients, date_sent, body_snippet, body_html, body_plain,
                      body_cached, is_read, is_starred, has_attachments)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
+                    folder_role = VALUES(folder_role),
                     is_read = VALUES(is_read),
                     is_starred = VALUES(is_starred),
                     has_attachments = VALUES(has_attachments),
                     subject = VALUES(subject),
                     sender_name = VALUES(sender_name),
                     sender_email = VALUES(sender_email),
+                    recipients = VALUES(recipients),
                     date_sent = VALUES(date_sent),
                     message_id = VALUES(message_id),
                     in_reply_to = VALUES(in_reply_to),
@@ -148,6 +188,8 @@ class SyncService
 
         Database::connection()->prepare($sql)->execute([
             $accountId,
+            $folderPath,
+            $folderRole,
             $uid,
             $messageId ?: null,
             $inReplyTo ?: null,
@@ -155,6 +197,7 @@ class SyncService
             $subject,
             $from['name'],
             $from['email'],
+            $recipients,
             $dateSent,
             $snippet,
             $html,
@@ -165,6 +208,23 @@ class SyncService
         ]);
 
         return true;
+    }
+
+    /** Comma-joined "To" recipients (display name or address), for the Sent view. */
+    private static function recipientList($message): string
+    {
+        try {
+            $to = $message->getTo();
+            $list = is_array($to) ? $to : ($to !== null ? $to->all() : []);
+            $out = [];
+            foreach ($list as $addr) {
+                $name = self::decodeMime(trim((string) ($addr->personal ?: $addr->mail)));
+                $out[] = trim($name, "\"'");
+            }
+            return implode(', ', array_filter($out));
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     private static function firstFrom($message): array

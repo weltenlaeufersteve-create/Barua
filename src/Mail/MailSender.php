@@ -77,11 +77,35 @@ class MailSender
             }
 
             $mailer->send();
-            return ['ok' => true];
+
+            // Append a copy to the account's IMAP Sent folder so it shows in every client
+            // (webmail, phone, …), not just Barua. Non-fatal if it fails — the mail is sent.
+            $appended = self::appendToSent($account, $mailer->getSentMIMEMessage());
+
+            return ['ok' => true, 'appended_to_sent' => $appended];
         } catch (PHPMailerException $e) {
             return ['ok' => false, 'error' => $mailer->ErrorInfo ?: $e->getMessage()];
         } catch (\Throwable $e) {
             return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /** APPEND the raw MIME to the account's IMAP Sent folder, flagged \Seen. Returns success. */
+    private static function appendToSent(array $account, string $rawMime): bool
+    {
+        try {
+            $client = SyncService::makeClient($account);
+            $client->connect();
+            $sent = FolderResolver::find($client, 'sent');
+            if ($sent === null) {
+                $client->disconnect();
+                return false;
+            }
+            $sent->appendMessage($rawMime, ['Seen']);
+            $client->disconnect();
+            return true;
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 

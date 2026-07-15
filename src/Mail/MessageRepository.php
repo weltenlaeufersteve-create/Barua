@@ -12,7 +12,7 @@ class MessageRepository
      */
     public static function unifiedInbox(int $limit = 100, ?int $accountId = null): array
     {
-        $where = 'm.is_archived = 0';
+        $where = "m.folder_role = 'inbox' AND m.is_archived = 0";
         $params = [];
         if ($accountId !== null) {
             $where .= ' AND m.account_id = ?';
@@ -29,6 +29,50 @@ class MessageRepository
         return $stmt->fetchAll();
     }
 
+    /**
+     * Unified Sent view from the synced IMAP Sent folders (folder_role='sent'), across all
+     * accounts. Mapped so the inbox list/reader markup renders it — the "sender" slot shows
+     * the recipient; the account colour stripe marks the sending account.
+     */
+    public static function sentMessages(int $limit = 100, ?int $accountId = null): array
+    {
+        $where = "m.folder_role = 'sent'";
+        $params = [];
+        if ($accountId !== null) {
+            $where .= ' AND m.account_id = ?';
+            $params[] = $accountId;
+        }
+        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
+                FROM messages m
+                JOIN accounts a ON a.id = m.account_id
+                WHERE $where
+                ORDER BY m.date_sent DESC
+                LIMIT " . (int) $limit;
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        return array_map(function (array $r) {
+            $recipient = $r['recipients'] !== '' ? $r['recipients'] : '(unknown recipient)';
+            $r['sender_name'] = 'To: ' . $recipient;
+            $r['sender_email'] = $r['recipients'];
+            return $r;
+        }, $rows);
+    }
+
+    public static function sentCount(?int $accountId = null): int
+    {
+        $where = "folder_role = 'sent'";
+        $params = [];
+        if ($accountId !== null) {
+            $where .= ' AND account_id = ?';
+            $params[] = $accountId;
+        }
+        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
@@ -43,18 +87,18 @@ class MessageRepository
     /** Accounts with their unread (non-archived) counts, for the sidebar. */
     public static function accountsWithUnread(): array
     {
-        $sql = 'SELECT a.id, a.label, a.colour, a.email,
-                       COALESCE(SUM(CASE WHEN m.is_read = 0 AND m.is_archived = 0 THEN 1 ELSE 0 END), 0) AS unread
+        $sql = "SELECT a.id, a.label, a.colour, a.email,
+                       COALESCE(SUM(CASE WHEN m.is_read = 0 AND m.is_archived = 0 AND m.folder_role = 'inbox' THEN 1 ELSE 0 END), 0) AS unread
                 FROM accounts a
                 LEFT JOIN messages m ON m.account_id = a.id
                 GROUP BY a.id, a.label, a.colour, a.email
-                ORDER BY a.created_at ASC';
+                ORDER BY a.created_at ASC";
         return Database::connection()->query($sql)->fetchAll();
     }
 
     public static function totalUnread(): int
     {
-        $sql = 'SELECT COUNT(*) FROM messages WHERE is_read = 0 AND is_archived = 0';
+        $sql = "SELECT COUNT(*) FROM messages WHERE is_read = 0 AND is_archived = 0 AND folder_role = 'inbox'";
         return (int) Database::connection()->query($sql)->fetchColumn();
     }
 

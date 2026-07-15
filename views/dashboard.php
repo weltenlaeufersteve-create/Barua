@@ -2,19 +2,37 @@
 use Barua\Mail\MessageRepository;
 
 $activeAccountId = $activeAccountId ?? null;
+$view = $view ?? 'inbox';
 $accounts = MessageRepository::accountsWithUnread();
 $totalUnread = MessageRepository::totalUnread();
-$rows = MessageRepository::unifiedInbox(100, $activeAccountId);
+$sentCount = MessageRepository::sentCount($activeAccountId);
 
-// Header title: account label when filtered, else "Inbox".
+// Resolve the active account (scope) regardless of which folder is shown.
 $activeAccount = null;
 if ($activeAccountId !== null) {
     foreach ($accounts as $a) {
         if ((int) $a['id'] === $activeAccountId) { $activeAccount = $a; break; }
     }
 }
-$listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
-$listSubtitle = $activeAccount ? $activeAccount['email'] : 'Unified';
+
+// Build a sidebar URL for a given scope (account or null=all) + folder view.
+$buildUrl = function (?int $account, string $folderView): string {
+    $params = [];
+    if ($account !== null) { $params['account'] = $account; }
+    if ($folderView !== 'inbox') { $params['view'] = $folderView; }
+    return '/' . (empty($params) ? '' : '?' . http_build_query($params));
+};
+
+// Folder view = scope (all / account) × folder (inbox / sent).
+if ($view === 'sent') {
+    $rows = MessageRepository::sentMessages(100, $activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'Sent';
+    $listSubtitle = $activeAccount ? 'Sent' : 'All accounts';
+} else {
+    $rows = MessageRepository::unifiedInbox(100, $activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
+    $listSubtitle = $activeAccount ? $activeAccount['email'] : 'Unified';
+}
 
 // Group rows by human date label, preserving date-desc order.
 $groups = [];
@@ -28,6 +46,26 @@ function initial(array $row): string
 {
     $base = $row['sender_name'] !== '' ? $row['sender_name'] : $row['sender_email'];
     return mb_strtoupper(mb_substr($base, 0, 1)) ?: '?';
+}
+
+/** Inline stroke SVG icons for the sidebar (currentColor, 16px). */
+function sidebarIcon(string $name): string
+{
+    $paths = [
+        'inbox'         => '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+        'sent'          => '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+        'pinned'        => '<line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z"/>',
+        'drafts'        => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+        'archive'       => '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
+        'spam'          => '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+        'trash'         => '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+        'people'        => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        'newsletters'   => '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+        'notifications' => '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+        'starred'       => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    ];
+    $inner = $paths[$name] ?? '';
+    return '<svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' . $inner . '</svg>';
 }
 
 // Compact JSON map for the reader pane (client-side swap on row click).
@@ -71,12 +109,12 @@ foreach ($rows as $row) {
       <div class="mobile-back" data-go="list">‹ Inbox</div>
       <div class="sidebar__title">Barua</div>
 
-      <a href="/" class="sidebar__item<?= $activeAccount === null ? ' is-active' : '' ?>">Inbox <span class="sidebar__count"><?= $totalUnread ?: '' ?></span></a>
+      <a href="/" class="sidebar__item<?= ($view === 'inbox' && $activeAccount === null) ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count"><?= $totalUnread ?: '' ?></span></a>
 
       <div class="sidebar__divider"></div>
 
       <?php foreach ($accounts as $acc): ?>
-        <a href="/?account=<?= (int) $acc['id'] ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
+        <a href="<?= htmlspecialchars($buildUrl((int) $acc['id'], $view)) ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
           <span class="account-avatar" style="background: <?= htmlspecialchars($acc['colour']) ?>"><?= htmlspecialchars(mb_strtoupper(mb_substr($acc['label'], 0, 1))) ?></span>
           <?= htmlspecialchars($acc['label']) ?>
           <?php if ((int) $acc['unread'] > 0): ?>
@@ -87,18 +125,18 @@ foreach ($rows as $row) {
 
       <div class="sidebar__divider"></div>
 
-      <div class="sidebar__item">Pinned</div>
-      <div class="sidebar__item">Drafts</div>
-      <div class="sidebar__item">Sent</div>
-      <div class="sidebar__item">Archive</div>
-      <div class="sidebar__item">Spam</div>
-      <div class="sidebar__item">Trash</div>
+      <div class="sidebar__item"><?= sidebarIcon('pinned') ?> Pinned</div>
+      <div class="sidebar__item"><?= sidebarIcon('drafts') ?> Drafts</div>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'sent')) ?>" class="sidebar__item<?= $view === 'sent' ? ' is-active' : '' ?>"><?= sidebarIcon('sent') ?> Sent <span class="sidebar__count"><?= $sentCount ?: '' ?></span></a>
+      <div class="sidebar__item"><?= sidebarIcon('archive') ?> Archive</div>
+      <div class="sidebar__item"><?= sidebarIcon('spam') ?> Spam</div>
+      <div class="sidebar__item"><?= sidebarIcon('trash') ?> Trash</div>
 
       <div class="sidebar__section-header">Groups</div>
-      <div class="sidebar__item">People</div>
-      <div class="sidebar__item">Newsletters</div>
-      <div class="sidebar__item">Notifications</div>
-      <div class="sidebar__item">Starred</div>
+      <div class="sidebar__item"><?= sidebarIcon('people') ?> People</div>
+      <div class="sidebar__item"><?= sidebarIcon('newsletters') ?> Newsletters</div>
+      <div class="sidebar__item"><?= sidebarIcon('notifications') ?> Notifications</div>
+      <div class="sidebar__item"><?= sidebarIcon('starred') ?> Starred</div>
 
       <div class="sidebar__spacer"></div>
       <div class="sidebar__item" id="open-settings">⚙ Settings</div>
@@ -127,7 +165,7 @@ foreach ($rows as $row) {
 
       <?php if (empty($rows)): ?>
         <div style="padding: 24px 20px; color: var(--text-tertiary); font-size: 13.5px;">
-          No messages yet. Click ⟳ to sync your accounts.
+          <?= $view === 'sent' ? 'No sent messages yet.' : 'No messages yet. Click ⟳ to sync your accounts.' ?>
         </div>
       <?php endif; ?>
 

@@ -54,6 +54,14 @@
   flex-shrink: 0;
 }
 
+.sidebar__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+.sidebar__item.is-active .sidebar__icon { color: var(--text-primary); }
+
 /* Account avatar in the sidebar — initial on the account colour now,
    Gravatar image later (same box, just swap in an <img>). */
 .account-avatar {
