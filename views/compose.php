@@ -108,16 +108,33 @@ foreach ($composeAccounts as $ca) {
   .compose-overlay.is-min .compose__textarea { padding: 14px 16px; }
   .compose-overlay.is-min .compose-main__toolbar { padding: 10px 16px; }
 
+  .compose__from-mini-wrap { display: none; position: relative; }
+  .compose-overlay.is-min .compose__from-mini-wrap { display: block; }
+
   .compose__from-mini {
-    display: none; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 8px;
     padding: 10px 0; border-bottom: 1px solid var(--border);
     font-size: 13px; color: var(--text-secondary); cursor: pointer;
   }
-  .compose-overlay.is-min .compose__from-mini { display: flex; }
+  .compose__from-caret { margin-left: auto; color: var(--text-tertiary); font-size: 11px; }
+
+  .compose__from-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; z-index: 20;
+    background: var(--sidebar-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    padding: 6px; min-width: 260px; margin-top: 4px;
+  }
+  .compose__from-dropdown.is-open { display: block; }
+  .compose__from-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .compose__from-option:hover { background: var(--hover-bg); }
+  .compose__from-option.is-active { background: var(--selected-bg); }
 
   @media (max-width: 900px) {
     .compose-accounts { display: none; }
-    .compose__from-mini { display: flex !important; }
+    .compose__from-mini-wrap { display: block !important; }
   }
 </style>
 
@@ -146,9 +163,23 @@ foreach ($composeAccounts as $ca) {
     </div>
 
     <div class="compose-fields">
-      <div class="compose__from-mini" id="compose-from-mini" title="Change sender (expand)">
-        <span class="compose-account__dot" id="mini-dot"></span>
-        <span id="mini-name"></span>
+      <div class="compose__from-mini-wrap">
+        <div class="compose__from-mini" id="compose-from-mini" title="Change sender">
+          <span class="compose-account__dot" id="mini-dot"></span>
+          <span id="mini-name"></span>
+          <span class="compose__from-caret">▾</span>
+        </div>
+        <div class="compose__from-dropdown" id="compose-from-dropdown">
+          <?php foreach ($composeAccounts as $ca): ?>
+            <div class="compose__from-option" data-account-id="<?= (int) $ca['id'] ?>" data-colour="<?= htmlspecialchars($ca['colour']) ?>">
+              <span class="compose-account__dot" style="background: <?= htmlspecialchars($ca['colour']) ?>"></span>
+              <div class="compose-account__meta">
+                <div class="compose-account__name"><?= htmlspecialchars($ca['label']) ?></div>
+                <div class="compose-account__email"><?= htmlspecialchars($ca['email']) ?></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
       </div>
       <div class="compose__row">
         <label>To</label>
@@ -246,8 +277,25 @@ foreach ($composeAccounts as $ca) {
     document.getElementById('compose-min').addEventListener('click', function () {
       panel.classList.toggle('is-min');
     });
-    document.getElementById('compose-from-mini').addEventListener('click', function () {
-      panel.classList.remove('is-min'); // expand to change sender
+    // Mini-mode sender switch: a dropdown, no need to expand to fullscreen.
+    var fromDropdown = document.getElementById('compose-from-dropdown');
+    document.getElementById('compose-from-mini').addEventListener('click', function (e) {
+      e.stopPropagation();
+      fromDropdown.classList.toggle('is-open');
+      // mark the current sender in the dropdown
+      fromDropdown.querySelectorAll('.compose__from-option').forEach(function (o) {
+        o.classList.toggle('is-active', o.dataset.accountId === currentFromId);
+      });
+    });
+    fromDropdown.querySelectorAll('.compose__from-option').forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        selectAccount(opt.dataset.accountId, false);
+        fromDropdown.classList.remove('is-open');
+      });
+    });
+    document.addEventListener('click', function () {
+      fromDropdown.classList.remove('is-open');
     });
     document.getElementById('compose-cc-toggle').addEventListener('click', function () {
       document.getElementById('compose-cc-row').style.display = 'flex';
