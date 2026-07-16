@@ -152,4 +152,6 @@ Working end-to-end, live with 3 real accounts:
 9. **Account ordering:** accounts sortable via drag & drop in Settings → Accounts & Colours
    (drag handle icon left of the account name); the order persists (`accounts.sort_order`
    column needed) and drives the account list in the left sidebar.
-10. Eventually: a proper installer / DB-migration story.
+10. **Reader icon bar** in the reserved gap above the mail body (28px top margin already in
+    place): print, save as PDF, per-mail light/dark rendering toggle, ….
+11. Eventually: a proper installer / DB-migration story.

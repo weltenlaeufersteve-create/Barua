@@ -50,8 +50,45 @@ if ($path === '/' || $path === '') {
     $username = $_SESSION['user'];
     $csrfToken = Auth::csrfToken();
     $activeAccountId = isset($_GET['account']) ? (int) $_GET['account'] : null;
-    $view = in_array($_GET['view'] ?? '', ['sent', 'pinned', 'archive', 'trash'], true) ? $_GET['view'] : 'inbox';
+    $view = in_array($_GET['view'] ?? '', ['sent', 'pinned', 'archive', 'trash', 'drafts'], true) ? $_GET['view'] : 'inbox';
     require __DIR__ . '/../views/dashboard.php';
+    return;
+}
+
+if ($path === '/drafts/save' && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    $account = AccountRepository::find((int) ($_POST['account_id'] ?? 0));
+    if (!$account) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Unknown account']);
+        return;
+    }
+    $draftId = ($_POST['draft_id'] ?? '') !== '' ? (int) $_POST['draft_id'] : null;
+    $id = \Barua\Mail\DraftRepository::save($draftId, (int) $account['id'], [
+        'to'         => $_POST['to'] ?? '',
+        'cc'         => $_POST['cc'] ?? '',
+        'bcc'        => $_POST['bcc'] ?? '',
+        'subject'    => $_POST['subject'] ?? '',
+        'body_plain' => $_POST['body_plain'] ?? '',
+    ]);
+    echo json_encode(['ok' => true, 'id' => $id]);
+    return;
+}
+
+if (preg_match('#^/drafts/(\d+)/delete$#', $path, $m) && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    \Barua\Mail\DraftRepository::delete((int) $m[1]);
+    echo json_encode(['ok' => true]);
     return;
 }
 
@@ -81,10 +118,33 @@ if ($path === '/compose/send' && $method === 'POST') {
     if ($result['ok']) {
         // MailSender already appended the copy to the IMAP Sent folder; pull it into the cache.
         \Barua\Mail\SyncService::syncSentFolder($account);
+        // A sent draft is done — clean it up.
+        if (($_POST['draft_id'] ?? '') !== '') {
+            \Barua\Mail\DraftRepository::delete((int) $_POST['draft_id']);
+        }
     } else {
         http_response_code(502);
     }
     echo json_encode($result);
+    return;
+}
+
+if (preg_match('#^/messages/(\d+)/html$#', $path, $m) && $method === 'GET') {
+    $msg = \Barua\Mail\MessageRepository::find((int) $m[1]);
+    if (!$msg) {
+        http_response_code(404);
+        echo 'Not found.';
+        return;
+    }
+    $remote = ($_GET['images'] ?? '') === '1';
+    $html = trim($msg['body_html'] ?? '');
+    if ($html === '') {
+        $html = nl2br(htmlspecialchars($msg['body_plain'] ?? ''));
+    }
+    header('Content-Type: text/html; charset=utf-8');
+    header('Content-Security-Policy: ' . \Barua\Mail\HtmlMailRenderer::csp($remote));
+    header('X-Content-Type-Options: nosniff');
+    echo \Barua\Mail\HtmlMailRenderer::document($html, $remote);
     return;
 }
 
@@ -172,6 +232,24 @@ if (preg_match('#^/accounts/(\d+)$#', $path, $m) && $method === 'POST') {
     }
     AccountRepository::update((int) $m[1], $data);
     header('Location: /');
+    return;
+}
+
+if ($path === '/accounts/reorder' && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    $ids = array_filter(array_map('intval', explode(',', $_POST['order'] ?? '')));
+    if (empty($ids)) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'Empty order']);
+        return;
+    }
+    AccountRepository::reorder($ids);
+    echo json_encode(['ok' => true]);
     return;
 }
 

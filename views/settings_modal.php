@@ -67,14 +67,26 @@
   }
   .settings-panel.is-active { display: block; }
 
+  .set-account-block { border-bottom: 1px solid var(--border); }
+  .set-account-block:last-child { border-bottom: none; }
+  .set-account-block.is-dragging { opacity: 0.45; }
+
   .set-account {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 0;
-    border-bottom: 1px solid var(--border);
   }
-  .set-account:last-of-type { border-bottom: none; }
+
+  .set-drag-handle {
+    display: flex;
+    align-items: center;
+    color: var(--text-tertiary);
+    cursor: grab;
+    flex-shrink: 0;
+  }
+  .set-drag-handle:active { cursor: grabbing; }
+  .set-drag-handle:hover { color: var(--text-secondary); }
   .set-account__avatar {
     width: 34px; height: 34px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -115,7 +127,7 @@
     text-decoration: none;
   }
 
-  .set-account__editform { display: none; padding: 4px 0 16px; border-bottom: 1px solid var(--border); }
+  .set-account__editform { display: none; padding: 4px 0 16px; }
   .set-account__editform.is-open { display: block; }
   .set-subhead {
     font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
@@ -173,8 +185,11 @@
       <?php if (empty($settingsAccounts)): ?>
         <p style="color: var(--text-tertiary);">No accounts yet.</p>
       <?php endif; ?>
+      <div id="accounts-sortable">
       <?php foreach ($settingsAccounts as $sa): ?>
+        <div class="set-account-block" data-account-id="<?= (int) $sa['id'] ?>">
         <div class="set-account" data-account="<?= (int) $sa['id'] ?>">
+          <span class="set-drag-handle" title="Drag to reorder"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg></span>
           <div class="set-account__avatar" data-avatar style="background: <?= htmlspecialchars($sa['colour']) ?>">
             <?= htmlspecialchars(mb_strtoupper(mb_substr($sa['label'], 0, 1))) ?>
           </div>
@@ -238,7 +253,9 @@
             <button type="button" class="set-cancel" data-edit-toggle style="border-color: <?= htmlspecialchars($sa['colour']) ?>">Cancel</button>
           </div>
         </form>
+        </div>
       <?php endforeach; ?>
+      </div>
       <a href="/accounts" class="set-add-link">+ Add account</a>
     </div>
 
@@ -350,6 +367,70 @@
         var form = settingsRow.nextElementSibling;
         if (form) form.querySelectorAll('.set-save, .set-cancel')
           .forEach(function (b) { b.style.borderColor = colour; });
+      }
+    }
+
+    // ---- Drag & drop account ordering: persist + mirror into the sidebar ----
+    var sortable = document.getElementById('accounts-sortable');
+    if (sortable) {
+      var dragBlock = null;
+
+      sortable.querySelectorAll('.set-account-block').forEach(function (block) {
+        var handle = block.querySelector('.set-drag-handle');
+        handle.addEventListener('mousedown', function () { block.setAttribute('draggable', 'true'); });
+        block.addEventListener('dragstart', function (e) {
+          dragBlock = block;
+          block.classList.add('is-dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', ''); } catch (err) {}
+        });
+        block.addEventListener('dragend', function () {
+          block.removeAttribute('draggable');
+          block.classList.remove('is-dragging');
+          dragBlock = null;
+          persistOrder();
+        });
+      });
+
+      sortable.addEventListener('dragover', function (e) {
+        if (!dragBlock) return;
+        e.preventDefault();
+        var blocks = Array.prototype.slice.call(sortable.querySelectorAll('.set-account-block:not(.is-dragging)'));
+        var next = null;
+        for (var i = 0; i < blocks.length; i++) {
+          var r = blocks[i].getBoundingClientRect();
+          if (e.clientY < r.top + r.height / 2) { next = blocks[i]; break; }
+        }
+        if (next) { sortable.insertBefore(dragBlock, next); } else { sortable.appendChild(dragBlock); }
+      });
+
+      function persistOrder() {
+        var ids = Array.prototype.map.call(
+          sortable.querySelectorAll('.set-account-block'),
+          function (b) { return b.dataset.accountId; }
+        );
+        var body = new URLSearchParams();
+        body.set('csrf_token', csrf);
+        body.set('order', ids.join(','));
+        fetch('/accounts/reorder', { method: 'POST', body: body })
+          .then(function (r) { return r.json(); })
+          .then(function (res) { if (res.ok) reorderSidebar(ids); });
+      }
+
+      function reorderSidebar(ids) {
+        var anchors = {};
+        document.querySelectorAll('.sidebar__item[data-account]').forEach(function (a) {
+          anchors[a.dataset.account] = a;
+        });
+        var first = document.querySelector('.sidebar__item[data-account]');
+        if (!first) return;
+        var parent = first.parentNode;
+        var marker = document.createComment('acc-order');
+        parent.insertBefore(marker, first);
+        ids.forEach(function (id) {
+          if (anchors[id]) parent.insertBefore(anchors[id], marker);
+        });
+        parent.removeChild(marker);
       }
     }
 

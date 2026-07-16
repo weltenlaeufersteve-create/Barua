@@ -9,7 +9,8 @@ class AccountRepository
 {
     public static function all(): array
     {
-        $stmt = Database::connection()->query('SELECT * FROM accounts ORDER BY created_at ASC');
+        // User-defined order (drag & drop in Settings); id as deterministic tiebreaker.
+        $stmt = Database::connection()->query('SELECT * FROM accounts ORDER BY sort_order ASC, id ASC');
         return $stmt->fetchAll();
     }
 
@@ -27,16 +28,18 @@ class AccountRepository
         $colour = ColorPalette::pickUnused($usedColours);
 
         $db = Database::connection();
+        $nextOrder = (int) $db->query('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM accounts')->fetchColumn();
         $stmt = $db->prepare(
             'INSERT INTO accounts
-                (label, email, colour, imap_host, imap_port, imap_encryption, imap_username, imap_password_enc,
+                (label, email, colour, sort_order, imap_host, imap_port, imap_encryption, imap_username, imap_password_enc,
                  smtp_host, smtp_port, smtp_encryption, smtp_username, smtp_password_enc, signature)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $data['label'],
             $data['email'],
             $colour,
+            $nextOrder,
             $data['imap_host'],
             $data['imap_port'],
             $data['imap_encryption'],
@@ -57,6 +60,16 @@ class AccountRepository
     {
         $stmt = Database::connection()->prepare('DELETE FROM accounts WHERE id = ?');
         $stmt->execute([$id]);
+    }
+
+    /** Persist a full drag-and-drop ordering: position in $ids becomes sort_order. */
+    public static function reorder(array $ids): void
+    {
+        $db = Database::connection();
+        $stmt = $db->prepare('UPDATE accounts SET sort_order = ? WHERE id = ?');
+        foreach (array_values($ids) as $pos => $id) {
+            $stmt->execute([$pos + 1, (int) $id]);
+        }
     }
 
     public static function updateColour(int $id, string $colour): void

@@ -38,6 +38,10 @@ if ($view === 'sent') {
     $roleLabel = $view === 'archive' ? 'Archive' : 'Trash';
     $listTitle = $activeAccount ? $activeAccount['label'] : $roleLabel;
     $listSubtitle = $activeAccount ? $roleLabel : 'All accounts';
+} elseif ($view === 'drafts') {
+    $rows = \Barua\Mail\DraftRepository::forDisplay($activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'Drafts';
+    $listSubtitle = $activeAccount ? 'Drafts' : 'All accounts';
 } else {
     $rows = MessageRepository::unifiedInbox(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
@@ -50,7 +54,9 @@ foreach ($rows as $row) {
     $groups[MessageRepository::dateGroup($row['date_sent'])][] = $row;
 }
 
-$selected = $rows[0] ?? null;
+// Drafts open in the composer, not the reader — no preselection there.
+$isDraftView = $view === 'drafts';
+$selected = $isDraftView ? null : ($rows[0] ?? null);
 
 function initial(array $row): string
 {
@@ -80,9 +86,24 @@ function sidebarIcon(string $name): string
     return '<svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' . $inner . '</svg>';
 }
 
+// Drafts view: a compact map so a row click can reopen the draft in the composer.
+$jsDrafts = [];
+if ($isDraftView) {
+    foreach ($rows as $row) {
+        $jsDrafts[(int) $row['id']] = [
+            'accountId' => (int) $row['account_id'],
+            'to'        => $row['to_addresses'],
+            'cc'        => $row['cc_addresses'],
+            'bcc'       => $row['bcc_addresses'],
+            'subject'   => $row['subject'],
+            'body'      => $row['body_plain'],
+        ];
+    }
+}
+
 // Compact JSON map for the reader pane (client-side swap on row click).
 $jsMessages = [];
-foreach ($rows as $row) {
+foreach ($isDraftView ? [] : $rows as $row) {
     $body = $row['body_plain'] !== '' ? $row['body_plain'] : trim(strip_tags($row['body_html'] ?? ''));
     $jsMessages[(int) $row['id']] = [
         'subject'       => $row['subject'],
@@ -94,6 +115,7 @@ foreach ($rows as $row) {
         'messageId'     => $row['message_id'] ?? '',
         'time'          => MessageRepository::timeLabel($row['date_sent']),
         'initial'       => initial($row),
+        'hasHtml'       => trim($row['body_html'] ?? '') !== '',
         'body'          => $body !== '' ? $body : '(No text content)',
     ];
 }
@@ -140,7 +162,7 @@ foreach ($rows as $row) {
       <div class="sidebar__divider"></div>
 
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count" id="pinned-count"><?= $pinnedCount ?: '' ?></span></a>
-      <div class="sidebar__item"><?= sidebarIcon('drafts') ?> Drafts</div>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'drafts')) ?>" class="sidebar__item<?= $view === 'drafts' ? ' is-active' : '' ?>"><?= sidebarIcon('drafts') ?> Drafts <span class="sidebar__count" id="drafts-count"><?= \Barua\Mail\DraftRepository::count($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'sent')) ?>" class="sidebar__item<?= $view === 'sent' ? ' is-active' : '' ?>"><?= sidebarIcon('sent') ?> Sent <span class="sidebar__count"><?= $sentCount ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'archive')) ?>" class="sidebar__item<?= $view === 'archive' ? ' is-active' : '' ?>"><?= sidebarIcon('archive') ?> Archive <span class="sidebar__count"><?= MessageRepository::roleCount('archive', $activeAccountId) ?: '' ?></span></a>
       <div class="sidebar__item"><?= sidebarIcon('spam') ?> Spam</div>
@@ -187,6 +209,8 @@ foreach ($rows as $row) {
             Nothing archived yet (within the sync window).
           <?php elseif ($view === 'trash'): ?>
             Trash is empty (within the sync window).
+          <?php elseif ($view === 'drafts'): ?>
+            No drafts. Start writing in the composer — it autosaves here.
           <?php else: ?>
             No messages yet. Click ⟳ to sync your accounts.
           <?php endif; ?>
@@ -199,11 +223,15 @@ foreach ($rows as $row) {
           $isUnread = (int) $row['is_read'] === 0;
           $isSelected = $selected && $row['id'] === $selected['id'];
         ?>
-          <div class="mail-row<?= $isUnread ? ' is-unread' : '' ?><?= $isSelected ? ' is-selected' : '' ?>" data-msg="<?= (int) $row['id'] ?>" data-account="<?= (int) $row['account_id'] ?>">
+          <div class="mail-row<?= $isUnread ? ' is-unread' : '' ?><?= $isSelected ? ' is-selected' : '' ?>" <?= $isDraftView ? 'data-draft="' . (int) $row['id'] . '"' : 'data-msg="' . (int) $row['id'] . '"' ?> data-account="<?= (int) $row['account_id'] ?>">
             <div class="mail-row__actions">
-              <span class="row-action row-action--pin<?= (int) $row['is_starred'] === 1 ? ' is-pinned' : '' ?>" title="Pin"><?= sidebarIcon('pinned') ?></span>
-              <span class="row-action" title="Archive"><?= sidebarIcon('archive') ?></span>
-              <span class="row-action" title="Delete"><?= sidebarIcon('trash') ?></span>
+              <?php if ($isDraftView): ?>
+                <span class="row-action" title="Delete draft"><?= sidebarIcon('trash') ?></span>
+              <?php else: ?>
+                <span class="row-action row-action--pin<?= (int) $row['is_starred'] === 1 ? ' is-pinned' : '' ?>" title="Pin"><?= sidebarIcon('pinned') ?></span>
+                <span class="row-action" title="Archive"><?= sidebarIcon('archive') ?></span>
+                <span class="row-action" title="Delete"><?= sidebarIcon('trash') ?></span>
+              <?php endif; ?>
             </div>
             <span class="mail-row__stripe" style="background: <?= htmlspecialchars($row['account_colour']) ?>"></span>
             <div class="mail-row__body">
@@ -235,10 +263,16 @@ foreach ($rows as $row) {
           </div>
           <div class="reader__time"><?= htmlspecialchars(MessageRepository::timeLabel($selected['date_sent'])) ?></div>
         </div>
-        <div class="reader__body" id="reader-body"><?php
+        <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
+        <div class="reader__body" id="reader-body"<?= $selHasHtml ? ' style="display:none"' : '' ?>><?php
           $selBody = $selected['body_plain'] !== '' ? $selected['body_plain'] : trim(strip_tags($selected['body_html'] ?? ''));
           echo htmlspecialchars($selBody !== '' ? $selBody : '(No text content)');
         ?></div>
+        <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>
+          <div class="reader__imgbar" id="reader-imgbar">Remote images blocked · <span id="load-images">Load images</span></div>
+          <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox"
+                  <?= $selHasHtml ? 'src="/messages/' . (int) $selected['id'] . '/html"' : '' ?>></iframe>
+        </div>
       </div>
       <div class="reader__toolbar">
         <button class="pill" id="reader-reply">↩ Reply</button>
@@ -257,7 +291,7 @@ foreach ($rows as $row) {
     var messages = <?= json_encode($jsMessages, JSON_UNESCAPED_UNICODE) ?>;
     var currentMsgId = <?= $selected ? (int) $selected['id'] : 'null' ?>;
 
-    document.querySelectorAll('.mail-row').forEach(function (row) {
+    document.querySelectorAll('.mail-row[data-msg]').forEach(function (row) {
       row.addEventListener('click', function () {
         document.querySelectorAll('.mail-row').forEach(function (r) { r.classList.remove('is-selected'); });
         row.classList.add('is-selected');
@@ -268,6 +302,7 @@ foreach ($rows as $row) {
         currentMsgId = parseInt(row.dataset.msg, 10);
         document.getElementById('reader-subject').textContent = msg.subject || '(no subject)';
         document.getElementById('reader-body').textContent = msg.body;
+        showReaderBody(msg);
         var meta = document.getElementById('reader-meta');
         var avatar = meta.querySelector('.reader__avatar');
         avatar.style.background = msg.accountColour;
@@ -279,6 +314,30 @@ foreach ($rows as $row) {
 
         document.body.setAttribute('data-mobile-view', 'reader');
       });
+    });
+
+    // Plain text vs sandboxed HTML iframe in the reader.
+    function showReaderBody(msg) {
+      var plain = document.getElementById('reader-body');
+      var wrap = document.getElementById('reader-html');
+      var frame = document.getElementById('reader-frame');
+      var imgbar = document.getElementById('reader-imgbar');
+      if (!wrap) return;
+      if (msg.hasHtml) {
+        plain.style.display = 'none';
+        wrap.style.display = '';
+        imgbar.style.display = '';
+        frame.src = '/messages/' + currentMsgId + '/html';
+      } else {
+        plain.style.display = '';
+        wrap.style.display = 'none';
+      }
+    }
+    var loadImagesBtn = document.getElementById('load-images');
+    if (loadImagesBtn) loadImagesBtn.addEventListener('click', function () {
+      if (!currentMsgId) return;
+      document.getElementById('reader-frame').src = '/messages/' + currentMsgId + '/html?images=1';
+      document.getElementById('reader-imgbar').style.display = 'none';
     });
 
     // Row actions: pin toggle (IMAP \Flagged), archive, trash — server write + cache + UI.
@@ -308,7 +367,30 @@ foreach ($rows as $row) {
       setTimeout(function () { row.remove(); }, 150);
     }
 
-    document.querySelectorAll('.mail-row').forEach(function (row) {
+    // Draft rows: click reopens the composer with the draft; trash deletes it.
+    var drafts = <?= json_encode($jsDrafts, JSON_UNESCAPED_UNICODE) ?>;
+    document.querySelectorAll('.mail-row[data-draft]').forEach(function (row) {
+      var did = parseInt(row.dataset.draft, 10);
+      row.addEventListener('click', function () {
+        var d = drafts[did];
+        if (!d || !window.baruaCompose) return;
+        window.baruaCompose({
+          title: 'Draft', fromAccount: d.accountId, to: d.to, cc: d.cc, bcc: d.bcc,
+          subject: d.subject, body: d.body, draftId: did
+        });
+      });
+      var delBtn = row.querySelector('.row-action[title="Delete draft"]');
+      if (delBtn) delBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var body = new URLSearchParams();
+        body.set('csrf_token', mainCsrf);
+        fetch('/drafts/' + did + '/delete', { method: 'POST', body: body })
+          .then(function (r) { return r.json(); })
+          .then(function (res) { if (res.ok) removeRow(row); });
+      });
+    });
+
+    document.querySelectorAll('.mail-row[data-msg]').forEach(function (row) {
       var id = row.dataset.msg;
       var pinBtn = row.querySelector('.row-action--pin');
       var archBtn = row.querySelector('.row-action[title="Archive"]');

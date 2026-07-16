@@ -281,6 +281,40 @@
   line-height: 1.7;
   color: var(--text-primary);
   white-space: pre-wrap;
+  margin-top: 28px; /* same breathing room as the HTML box (future icon bar) */
+}
+
+/* HTML mail: sandboxed iframe fills the remaining reader height. */
+.reader__content { display: flex; flex-direction: column; }
+.reader__subject, .reader__meta { flex-shrink: 0; }
+.reader__htmlwrap {
+  flex: 1;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Full-bleed: stretch to the reader pane edges (counters .reader__content padding),
+     keeping the mail box rectangular — no rounding, clean separation.
+     Generous top gap: reserved space for a future icon bar (print, PDF, light/dark…). */
+  margin: 28px -32px -28px;
+}
+.reader__imgbar {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 0 32px; /* text stays aligned with the content column */
+}
+.reader__imgbar span {
+  color: var(--accent);
+  cursor: pointer;
+}
+.reader__frame {
+  flex: 1;
+  min-height: 360px;
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: #fff;
 }
 
 .reader__toolbar {

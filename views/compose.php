@@ -90,6 +90,15 @@ foreach ($composeAccounts as $ca) {
     color: var(--text-secondary); cursor: pointer;
   }
   .compose-main__toolbar .icon-btn:hover { background: var(--hover-bg); }
+  .compose__draft-status {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .compose__draft-status .ok { color: var(--acc-green); font-weight: 700; }
 
   /* Minimized: compact panel bottom-right, sender column hidden. */
   .compose-overlay.is-min {
@@ -196,6 +205,7 @@ foreach ($composeAccounts as $ca) {
     <div class="compose-main__toolbar">
       <div class="icon-btn" title="Attach file (coming soon)">📎</div>
       <div class="icon-btn" title="Insert image (coming soon)">🖼</div>
+      <span class="compose__draft-status" id="compose-draft-status"></span>
     </div>
   </div>
 </div>
@@ -217,6 +227,8 @@ foreach ($composeAccounts as $ca) {
     var currentInReplyTo = '';
     var currentReferences = '';
     var currentFromId = null;
+    var currentDraftId = null;
+    var draftTimer = null;
 
     function sigFor(accountId) {
       var s = signatures[accountId];
@@ -253,13 +265,21 @@ foreach ($composeAccounts as $ca) {
       opts = opts || {};
       titleEl.textContent = opts.title || 'New email';
       toI.value = opts.to || '';
-      ccI.value = '';
-      bccI.value = '';
+      ccI.value = opts.cc || '';
+      bccI.value = opts.bcc || '';
+      var showCc = !!(opts.cc || opts.bcc);
+      document.getElementById('compose-cc-row').style.display = showCc ? 'flex' : 'none';
+      document.getElementById('compose-bcc-row').style.display = showCc ? 'flex' : 'none';
       subjI.value = opts.subject || '';
       currentInReplyTo = opts.inReplyTo || '';
       currentReferences = opts.references || '';
+      currentDraftId = opts.draftId || null;
+      if (draftTimer) { clearTimeout(draftTimer); draftTimer = null; }
+      var dse = document.getElementById('compose-draft-status');
+      dse.innerHTML = currentDraftId ? '<span class="ok">✓</span> Draft saved' : '';
       var initialAccount = opts.fromAccount || (accountRows[0] && accountRows[0].dataset.accountId);
-      var sig = sigFor(initialAccount);
+      // Drafts already carry their signature — never append a second one.
+      var sig = opts.draftId ? '' : sigFor(initialAccount);
       bodyI.value = (opts.body || '') + sig;
       bodyI.dataset.sig = sig;
       selectAccount(initialAccount, true);
@@ -271,7 +291,51 @@ foreach ($composeAccounts as $ca) {
     }
     window.baruaCompose = openCompose;
 
+    // ---- Draft autosave: debounced while typing, flushed on close ----
+    function draftHasContent() {
+      var sig = bodyI.dataset.sig || '';
+      var core = bodyI.value;
+      if (sig && core.endsWith(sig)) core = core.slice(0, -sig.length);
+      return !!(toI.value.trim() || ccI.value.trim() || bccI.value.trim() || subjI.value.trim() || core.trim());
+    }
+
+    function saveDraft() {
+      draftTimer = null;
+      if (!panel.classList.contains('is-open') || !draftHasContent()) return;
+      var body = new URLSearchParams();
+      body.set('csrf_token', csrf);
+      body.set('draft_id', currentDraftId || '');
+      body.set('account_id', currentFromId);
+      body.set('to', toI.value);
+      body.set('cc', ccI.value);
+      body.set('bcc', bccI.value);
+      body.set('subject', subjI.value);
+      body.set('body_plain', bodyI.value);
+      fetch('/drafts/save', { method: 'POST', body: body })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res.ok) {
+            currentDraftId = res.id;
+            draftStatusEl.innerHTML = '<span class="ok">✓</span> Draft saved';
+          }
+        })
+        .catch(function () {});
+    }
+
+    var draftStatusEl = document.getElementById('compose-draft-status');
+    function scheduleAutosave() {
+      draftStatusEl.textContent = ''; // dirty again — the check returns after the next save
+      if (draftTimer) clearTimeout(draftTimer);
+      draftTimer = setTimeout(saveDraft, 2500);
+    }
+
+    [toI, ccI, bccI, subjI, bodyI].forEach(function (el) {
+      el.addEventListener('input', scheduleAutosave);
+    });
+
     document.getElementById('compose-close').addEventListener('click', function () {
+      if (draftTimer) { clearTimeout(draftTimer); draftTimer = null; }
+      saveDraft(); // flush so nothing is lost on close
       panel.classList.remove('is-open');
     });
     document.getElementById('compose-min').addEventListener('click', function () {
@@ -323,10 +387,13 @@ foreach ($composeAccounts as $ca) {
       body.set('body_plain', bodyI.value);
       body.set('in_reply_to', currentInReplyTo);
       body.set('references', currentReferences);
+      body.set('draft_id', currentDraftId || '');
       fetch('/compose/send', { method: 'POST', body: body })
         .then(function (r) { return r.json(); })
         .then(function (res) {
           if (res.ok) {
+            if (draftTimer) { clearTimeout(draftTimer); draftTimer = null; }
+            currentDraftId = null; // sent — the server deleted the draft
             statusEl.textContent = 'Sent ✓';
             setTimeout(function () { panel.classList.remove('is-open'); }, 900);
           } else {

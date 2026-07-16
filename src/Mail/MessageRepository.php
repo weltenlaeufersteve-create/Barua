@@ -160,8 +160,8 @@ class MessageRepository
                        COALESCE(SUM(CASE WHEN m.is_read = 0 AND m.is_archived = 0 AND m.folder_role = 'inbox' THEN 1 ELSE 0 END), 0) AS unread
                 FROM accounts a
                 LEFT JOIN messages m ON m.account_id = a.id
-                GROUP BY a.id, a.label, a.colour, a.email
-                ORDER BY a.created_at ASC";
+                GROUP BY a.id, a.label, a.colour, a.email, a.sort_order
+                ORDER BY a.sort_order ASC, a.id ASC";
         return Database::connection()->query($sql)->fetchAll();
     }
 

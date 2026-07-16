@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   label VARCHAR(100) NOT NULL,
   email VARCHAR(255) NOT NULL,
   colour CHAR(7) NOT NULL DEFAULT '#4A90D9',
+  sort_order INT NOT NULL DEFAULT 0,
   imap_host VARCHAR(255) NOT NULL,
   imap_port SMALLINT NOT NULL DEFAULT 993,
   imap_encryption ENUM('ssl','tls','none') DEFAULT 'ssl',
