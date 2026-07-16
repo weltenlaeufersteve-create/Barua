@@ -60,10 +60,46 @@ class MessageRepository
         }, $rows);
     }
 
-    /** Pinned = IMAP \Flagged (stored as is_starred). Spark-style naming — no stars in the UI. */
+    /** Messages of one folder role (archive, trash, …), newest first, optionally scoped. */
+    public static function roleMessages(string $role, int $limit = 100, ?int $accountId = null): array
+    {
+        $where = 'm.folder_role = ?';
+        $params = [$role];
+        if ($accountId !== null) {
+            $where .= ' AND m.account_id = ?';
+            $params[] = $accountId;
+        }
+        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
+                FROM messages m
+                JOIN accounts a ON a.id = m.account_id
+                WHERE $where
+                ORDER BY m.date_sent DESC
+                LIMIT " . (int) $limit;
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public static function roleCount(string $role, ?int $accountId = null): int
+    {
+        $where = 'folder_role = ?';
+        $params = [$role];
+        if ($accountId !== null) {
+            $where .= ' AND account_id = ?';
+            $params[] = $accountId;
+        }
+        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Pinned = IMAP \Flagged (stored as is_starred). Spark-style naming — no stars in the UI.
+     * Includes archived pins (Spark's pin list spans folders); trash pins stay out.
+     */
     public static function pinnedMessages(int $limit = 100, ?int $accountId = null): array
     {
-        $where = "m.folder_role = 'inbox' AND m.is_starred = 1 AND m.is_archived = 0";
+        $where = "m.folder_role IN ('inbox','archive') AND m.is_starred = 1 AND m.is_archived = 0";
         $params = [];
         if ($accountId !== null) {
             $where .= ' AND m.account_id = ?';
@@ -82,7 +118,7 @@ class MessageRepository
 
     public static function pinnedCount(?int $accountId = null): int
     {
-        $where = "folder_role = 'inbox' AND is_starred = 1 AND is_archived = 0";
+        $where = "folder_role IN ('inbox','archive') AND is_starred = 1 AND is_archived = 0";
         $params = [];
         if ($accountId !== null) {
             $where .= ' AND account_id = ?';

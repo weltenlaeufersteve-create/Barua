@@ -50,7 +50,7 @@ if ($path === '/' || $path === '') {
     $username = $_SESSION['user'];
     $csrfToken = Auth::csrfToken();
     $activeAccountId = isset($_GET['account']) ? (int) $_GET['account'] : null;
-    $view = in_array($_GET['view'] ?? '', ['sent', 'pinned'], true) ? $_GET['view'] : 'inbox';
+    $view = in_array($_GET['view'] ?? '', ['sent', 'pinned', 'archive', 'trash'], true) ? $_GET['view'] : 'inbox';
     require __DIR__ . '/../views/dashboard.php';
     return;
 }

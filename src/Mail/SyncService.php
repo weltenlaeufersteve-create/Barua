@@ -65,11 +65,13 @@ class SyncService
             $client = self::makeClient($account);
             $client->connect();
 
-            // Sync the account's INBOX and Sent folders (Archive/Trash/Drafts follow later).
+            // Sync the account's INBOX, Sent, Archive and Trash folders (Drafts/Spam later).
             $roles = FolderResolver::map($client);
             $toSync = ['inbox' => $roles['inbox'] ?? $client->getFolder('INBOX')];
-            if (!empty($roles['sent'])) {
-                $toSync['sent'] = $roles['sent'];
+            foreach (['sent', 'archive', 'trash'] as $role) {
+                if (!empty($roles[$role])) {
+                    $toSync[$role] = $roles[$role];
+                }
             }
 
             $stats = ['checked' => 0, 'new' => 0, 'flags' => 0, 'removed' => 0];

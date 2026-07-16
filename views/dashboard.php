@@ -33,6 +33,11 @@ if ($view === 'sent') {
     $rows = MessageRepository::pinnedMessages(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Pinned';
     $listSubtitle = $activeAccount ? 'Pinned' : 'All accounts';
+} elseif ($view === 'archive' || $view === 'trash') {
+    $rows = MessageRepository::roleMessages($view, 100, $activeAccountId);
+    $roleLabel = $view === 'archive' ? 'Archive' : 'Trash';
+    $listTitle = $activeAccount ? $activeAccount['label'] : $roleLabel;
+    $listSubtitle = $activeAccount ? $roleLabel : 'All accounts';
 } else {
     $rows = MessageRepository::unifiedInbox(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
@@ -137,9 +142,9 @@ foreach ($rows as $row) {
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count" id="pinned-count"><?= $pinnedCount ?: '' ?></span></a>
       <div class="sidebar__item"><?= sidebarIcon('drafts') ?> Drafts</div>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'sent')) ?>" class="sidebar__item<?= $view === 'sent' ? ' is-active' : '' ?>"><?= sidebarIcon('sent') ?> Sent <span class="sidebar__count"><?= $sentCount ?: '' ?></span></a>
-      <div class="sidebar__item"><?= sidebarIcon('archive') ?> Archive</div>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'archive')) ?>" class="sidebar__item<?= $view === 'archive' ? ' is-active' : '' ?>"><?= sidebarIcon('archive') ?> Archive <span class="sidebar__count"><?= MessageRepository::roleCount('archive', $activeAccountId) ?: '' ?></span></a>
       <div class="sidebar__item"><?= sidebarIcon('spam') ?> Spam</div>
-      <div class="sidebar__item"><?= sidebarIcon('trash') ?> Trash</div>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'trash')) ?>" class="sidebar__item<?= $view === 'trash' ? ' is-active' : '' ?>"><?= sidebarIcon('trash') ?> Trash <span class="sidebar__count"><?= MessageRepository::roleCount('trash', $activeAccountId) ?: '' ?></span></a>
 
       <div class="sidebar__section-header">Groups</div>
       <div class="sidebar__item"><?= sidebarIcon('people') ?> People</div>
@@ -178,6 +183,10 @@ foreach ($rows as $row) {
             No sent messages yet.
           <?php elseif ($view === 'pinned'): ?>
             No pinned messages. Pin mail on any device (IMAP flag) and it shows up here.
+          <?php elseif ($view === 'archive'): ?>
+            Nothing archived yet (within the sync window).
+          <?php elseif ($view === 'trash'): ?>
+            Trash is empty (within the sync window).
           <?php else: ?>
             No messages yet. Click ⟳ to sync your accounts.
           <?php endif; ?>
