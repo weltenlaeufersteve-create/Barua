@@ -88,6 +88,26 @@ if ($path === '/compose/send' && $method === 'POST') {
     return;
 }
 
+if (preg_match('#^/messages/(\d+)/(pin|archive|trash)$#', $path, $m) && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    $id = (int) $m[1];
+    $result = match ($m[2]) {
+        'pin'     => \Barua\Mail\MessageActions::setPin($id, ($_POST['pinned'] ?? '') === '1'),
+        'archive' => \Barua\Mail\MessageActions::archive($id),
+        'trash'   => \Barua\Mail\MessageActions::trash($id),
+    };
+    if (!$result['ok']) {
+        http_response_code(422);
+    }
+    echo json_encode($result);
+    return;
+}
+
 if ($path === '/sync' && $method === 'POST') {
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
         http_response_code(403);

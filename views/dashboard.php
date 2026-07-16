@@ -134,7 +134,7 @@ foreach ($rows as $row) {
 
       <div class="sidebar__divider"></div>
 
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count"><?= $pinnedCount ?: '' ?></span></a>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count" id="pinned-count"><?= $pinnedCount ?: '' ?></span></a>
       <div class="sidebar__item"><?= sidebarIcon('drafts') ?> Drafts</div>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'sent')) ?>" class="sidebar__item<?= $view === 'sent' ? ' is-active' : '' ?>"><?= sidebarIcon('sent') ?> Sent <span class="sidebar__count"><?= $sentCount ?: '' ?></span></a>
       <div class="sidebar__item"><?= sidebarIcon('archive') ?> Archive</div>
@@ -272,9 +272,75 @@ foreach ($rows as $row) {
       });
     });
 
-    // Row action icons are display-only for now — swallow clicks so they don't open the mail.
-    document.querySelectorAll('.row-action').forEach(function (el) {
-      el.addEventListener('click', function (e) { e.stopPropagation(); });
+    // Row actions: pin toggle (IMAP \Flagged), archive, trash — server write + cache + UI.
+    var mainCsrf = <?= json_encode($csrfToken) ?>;
+    var currentView = <?= json_encode($view) ?>;
+
+    function msgAction(id, action, data, cb) {
+      var body = new URLSearchParams();
+      body.set('csrf_token', mainCsrf);
+      Object.keys(data || {}).forEach(function (k) { body.set(k, data[k]); });
+      fetch('/messages/' + id + '/' + action, { method: 'POST', body: body })
+        .then(function (r) { return r.json(); })
+        .then(cb)
+        .catch(function () { cb({ ok: false, error: 'Network error' }); });
+    }
+
+    function bumpPinnedBadge(delta) {
+      var badge = document.getElementById('pinned-count');
+      if (!badge) return;
+      var n = (parseInt(badge.textContent, 10) || 0) + delta;
+      badge.textContent = n > 0 ? n : '';
+    }
+
+    function removeRow(row) {
+      row.style.transition = 'opacity 0.15s ease';
+      row.style.opacity = '0';
+      setTimeout(function () { row.remove(); }, 150);
+    }
+
+    document.querySelectorAll('.mail-row').forEach(function (row) {
+      var id = row.dataset.msg;
+      var pinBtn = row.querySelector('.row-action--pin');
+      var archBtn = row.querySelector('.row-action[title="Archive"]');
+      var trashBtn = row.querySelector('.row-action[title="Delete"]');
+
+      if (pinBtn) pinBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var nowPinned = !pinBtn.classList.contains('is-pinned');
+        pinBtn.classList.toggle('is-pinned', nowPinned); // optimistic
+        msgAction(id, 'pin', { pinned: nowPinned ? '1' : '0' }, function (res) {
+          if (!res.ok) { pinBtn.classList.toggle('is-pinned', !nowPinned); return; }
+          bumpPinnedBadge(nowPinned ? 1 : -1);
+          if (!nowPinned && currentView === 'pinned') removeRow(row);
+        });
+      });
+
+      if (archBtn) archBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        msgAction(id, 'archive', {}, function (res) {
+          if (res.ok) removeRow(row);
+        });
+      });
+
+      if (trashBtn) trashBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        msgAction(id, 'trash', {}, function (res) {
+          if (res.ok) removeRow(row);
+        });
+      });
+    });
+
+    // Reader toolbar: archive the currently open message.
+    var readerArchive = document.querySelector('.reader__toolbar .pill:not(#reader-reply):not(#reader-forward)');
+    if (readerArchive) readerArchive.addEventListener('click', function () {
+      if (!currentMsgId) return;
+      msgAction(currentMsgId, 'archive', {}, function (res) {
+        if (!res.ok) return;
+        var row = document.querySelector('.mail-row[data-msg="' + currentMsgId + '"]');
+        if (row) removeRow(row);
+        document.body.setAttribute('data-mobile-view', 'list');
+      });
     });
 
     document.querySelectorAll('[data-go]').forEach(function (el) {
