@@ -171,3 +171,12 @@ Working end-to-end, live with 3 real accounts:
     50 = 50 connections). Add a batch endpoint: one IMAP connection, multiple UIDs in one
     command (IMAP MOVE/STORE accept UID sets). UI stays optimistic regardless.
 12. Eventually: a proper installer / DB-migration story.
+
+## Future direction (much later)
+
+- **Calendar via CalDAV** — Spark can't do CalDAV, which is the itch. Serverprofis is cPanel,
+  which ships CalDAV/CardDAV (cpdavd) on the same box as the mail, so the user's calendar can
+  live there instead of Google. Barua would add a calendar module as a CalDAV client
+  (discovery, event CRUD, recurrence). Big, separate module — noted so the roadmap points at
+  "personal data under one roof (Serverprofis), off Google", not just email. CardDAV contacts
+  would be the natural sibling (and would also feed the People group / autocomplete).
