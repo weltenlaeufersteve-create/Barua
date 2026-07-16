@@ -4,12 +4,17 @@ namespace Barua\Accounts;
 
 class ColorPalette
 {
-    // Fixed 20-colour palette (5x4), assigned automatically per account.
+    /**
+     * Fixed 20-colour palette (5x4), assigned automatically per account.
+     * Generated in oklch with CONSTANT lightness (L=0.68) and chroma (C=0.107) —
+     * only the hue walks the full circle in 18° steps, rainbow-sorted. No pure
+     * colours, uniform signal strength, no two entries too close.
+     */
     private const COLOURS = [
-        '#5B8DEF', '#F2994A', '#EC6FAE', '#3FC1BA', '#9B7BF0',
-        '#4FAE7E', '#E86A5C', '#4A90D9', '#C77DFF', '#2EC4B6',
-        '#FF9F1C', '#EF476F', '#06D6A0', '#8D99AE', '#F4A261',
-        '#7B61FF', '#00B4D8', '#E76F51', '#43AA8B', '#B5838D',
+        '#D27C83', '#D27F6D', '#CD8459', '#C38C4A', '#B59443', // red → gold
+        '#A29C47', '#8CA356', '#73A96A', '#57AC80', '#3CAE97', // olive → green-teal
+        '#2AADAD', '#30A9BF', '#47A4CE', '#619DD7', '#7B96DB', // teal → blue
+        '#918FD8', '#A688CF', '#B682C0', '#C47EAE', '#CD7C99', // violet → rose
     ];
 
     /** The full 20-colour palette (for the settings swatch picker). */
