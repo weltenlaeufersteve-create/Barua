@@ -72,16 +72,12 @@ class SyncService
                 $toSync['sent'] = $roles['sent'];
             }
 
-            $fetched = 0;
-            $stored = 0;
+            $stats = ['checked' => 0, 'new' => 0, 'flags' => 0, 'removed' => 0];
             foreach ($toSync as $role => $folder) {
-                $messages = $folder->messages()->all()->setFetchOrder('desc')->limit($limit)->get();
-                foreach ($messages as $message) {
-                    if (self::store((int) $account['id'], $folder->path, $role, $message)) {
-                        $stored++;
-                    }
+                $s = self::syncFolder((int) $account['id'], $folder, $role, $limit);
+                foreach ($s as $k => $v) {
+                    $stats[$k] += $v;
                 }
-                $fetched += count($messages);
             }
 
             $client->disconnect();
@@ -90,10 +86,99 @@ class SyncService
             $db->prepare('UPDATE accounts SET last_synced_at = NOW() WHERE id = ?')
                ->execute([$account['id']]);
 
-            return ['account' => $label, 'ok' => true, 'fetched' => $fetched, 'stored' => $stored];
+            return ['account' => $label, 'ok' => true] + $stats;
         } catch (\Throwable $e) {
             return ['account' => $label, 'ok' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Two-phase folder sync, so routine runs are cheap and server-side changes propagate:
+     *   1. Light pass — UIDs + flags only (no bodies): detects new mail, read/star changes
+     *      made in other clients, and deletions.
+     *   2. Full fetch (with bodies) only for messages we have never cached. New messages
+     *      always carry the highest UIDs in an IMAP folder, so fetching the newest
+     *      count(new) covers exactly them.
+     * Deletions: cached rows whose UID vanished from the server are removed — limited to the
+     * synced window (>= lowest seen UID) when the folder holds more than $limit messages, so
+     * older cached mail below the window is never wrongly purged.
+     */
+    private static function syncFolder(int $accountId, $folder, string $role, int $limit): array
+    {
+        $db = Database::connection();
+
+        // Pass 1: cheap — no bodies.
+        $light = $folder->messages()->all()->setFetchBody(false)->setFetchOrder('desc')->limit($limit)->get();
+        $server = []; // uid => ['read' => 0|1, 'star' => 0|1]
+        foreach ($light as $m) {
+            $uid = (int) self::scalar($m->getUid());
+            if ($uid === 0) {
+                continue;
+            }
+            $read = 0;
+            $star = 0;
+            try {
+                $read = $m->getFlags()->contains('Seen') ? 1 : 0;
+                $star = $m->getFlags()->contains('Flagged') ? 1 : 0;
+            } catch (\Throwable $e) {
+            }
+            $server[$uid] = ['read' => $read, 'star' => $star];
+        }
+
+        // Cached state for this folder.
+        $stmt = $db->prepare('SELECT imap_uid, is_read, is_starred FROM messages WHERE account_id = ? AND folder = ?');
+        $stmt->execute([$accountId, $folder->path]);
+        $cached = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $cached[(int) $row['imap_uid']] = $row;
+        }
+
+        // Pass 2: full fetch only for never-cached messages.
+        $newUids = array_diff(array_keys($server), array_keys($cached));
+        $new = 0;
+        if (!empty($newUids)) {
+            $full = $folder->messages()->all()->setFetchOrder('desc')->limit(count($newUids))->get();
+            foreach ($full as $message) {
+                if (self::store($accountId, $folder->path, $role, $message)) {
+                    $new++;
+                }
+            }
+        }
+
+        // Mirror flag changes (read on the phone, starred elsewhere, …).
+        $flags = 0;
+        $upd = $db->prepare('UPDATE messages SET is_read = ?, is_starred = ? WHERE account_id = ? AND folder = ? AND imap_uid = ?');
+        foreach ($server as $uid => $f) {
+            if (!isset($cached[$uid])) {
+                continue;
+            }
+            if ((int) $cached[$uid]['is_read'] !== $f['read'] || (int) $cached[$uid]['is_starred'] !== $f['star']) {
+                $upd->execute([$f['read'], $f['star'], $accountId, $folder->path, $uid]);
+                $flags++;
+            }
+        }
+
+        // Remove cached rows whose message is gone server-side (deleted/moved in another client).
+        if (empty($server)) {
+            $del = $db->prepare('DELETE FROM messages WHERE account_id = ? AND folder = ?');
+            $del->execute([$accountId, $folder->path]);
+            $removed = $del->rowCount();
+        } else {
+            $uids = array_keys($server);
+            $ph = implode(',', array_fill(0, count($uids), '?'));
+            $sql = 'DELETE FROM messages WHERE account_id = ? AND folder = ? AND imap_uid NOT IN (' . $ph . ')';
+            $params = array_merge([$accountId, $folder->path], $uids);
+            if (count($uids) >= $limit) {
+                // Partial window: leave older cached mail below the window untouched.
+                $sql .= ' AND imap_uid >= ?';
+                $params[] = min($uids);
+            }
+            $del = $db->prepare($sql);
+            $del->execute($params);
+            $removed = $del->rowCount();
+        }
+
+        return ['checked' => count($server), 'new' => $new, 'flags' => $flags, 'removed' => $removed];
     }
 
     /** Refresh just the Sent-folder cache for one account (called right after sending). */
@@ -104,10 +189,7 @@ class SyncService
             $client->connect();
             $sent = FolderResolver::find($client, 'sent');
             if ($sent) {
-                $messages = $sent->messages()->all()->setFetchOrder('desc')->limit($limit)->get();
-                foreach ($messages as $message) {
-                    self::store((int) $account['id'], $sent->path, 'sent', $message);
-                }
+                self::syncFolder((int) $account['id'], $sent, 'sent', $limit);
             }
             $client->disconnect();
         } catch (\Throwable $e) {

@@ -15,7 +15,8 @@ $results = SyncService::syncAll($limit);
 
 foreach ($results as $r) {
     if ($r['ok']) {
-        printf("[ok]   %-28s fetched=%d stored=%d\n", $r['account'], $r['fetched'], $r['stored']);
+        printf("[ok]   %-28s checked=%d new=%d flags=%d removed=%d\n",
+            $r['account'], $r['checked'], $r['new'], $r['flags'], $r['removed']);
     } else {
         printf("[FAIL] %-28s %s\n", $r['account'], $r['error']);
     }
