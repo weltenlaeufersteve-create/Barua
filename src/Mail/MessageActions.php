@@ -11,6 +11,39 @@ use Barua\Database;
  */
 class MessageActions
 {
+    /**
+     * Mark a message read on the IMAP server (\Seen) and in the cache. Must write \Seen to
+     * the server, not just the DB — otherwise the next sync's flag mirror sees the mail is
+     * still unread on the server and flips is_read back to 0.
+     */
+    public static function markRead(int $messageId): array
+    {
+        [$row, $account] = self::load($messageId);
+        if (!$row) {
+            return ['ok' => false, 'error' => 'Unknown message'];
+        }
+        if ((int) $row['is_read'] === 1) {
+            return ['ok' => true, 'already' => true]; // nothing to do
+        }
+
+        try {
+            $client = SyncService::makeClient($account);
+            $client->connect();
+            $folder = $client->getFolderByPath($row['folder']);
+            $message = $folder->query()->setFetchBody(false)->getMessageByUid((int) $row['imap_uid']);
+            $message->setFlag('Seen');
+            $client->disconnect();
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => 'IMAP: ' . $e->getMessage()];
+        }
+
+        Database::connection()
+            ->prepare('UPDATE messages SET is_read = 1 WHERE id = ?')
+            ->execute([$messageId]);
+
+        return ['ok' => true];
+    }
+
     /** Toggle the IMAP \Flagged flag ("Pinned"). Returns the new state. */
     public static function setPin(int $messageId, bool $pinned): array
     {

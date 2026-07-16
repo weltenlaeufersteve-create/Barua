@@ -305,11 +305,20 @@ foreach ($isDraftView ? [] : $rows as $row) {
       row.addEventListener('click', function () {
         document.querySelectorAll('.mail-row').forEach(function (r) { r.classList.remove('is-selected'); });
         row.classList.add('is-selected');
+        var wasUnread = row.classList.contains('is-unread');
         row.classList.remove('is-unread');
 
         var msg = messages[row.dataset.msg];
         if (!msg) return;
         currentMsgId = parseInt(row.dataset.msg, 10);
+
+        // Persist read state on the server (\Seen), so it survives sync + reload.
+        if (wasUnread) {
+            var rb = new URLSearchParams();
+            rb.set('csrf_token', mainCsrf);
+            fetch('/messages/' + currentMsgId + '/read', { method: 'POST', body: rb });
+        }
+
         document.getElementById('reader-subject').textContent = msg.subject || '(no subject)';
         document.getElementById('reader-body').textContent = msg.body;
         showReaderBody(msg);

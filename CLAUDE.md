@@ -144,7 +144,18 @@ Working end-to-end, live with 3 real accounts:
    VIEW (read side) already works; writing the flag from Barua is what's left.
 3. **HTML email rendering** with sanitization (currently plain-text only — XSS-safe by default).
 4. **Draft autosave** + Drafts view.
-5. Smart groups (People/Newsletters/Notifications) + custom filter groups.
+5. **Threading** (deferred — user wants it, UX approach TBD). Two parts: (A) correct
+   `thread_id` grouping — root of the References chain (webklex exposes references), else
+   In-Reply-To, else own Message-ID; plus a normalised-subject + participants + time-window
+   fallback for mail that omits References. Current thread_id is a naive 2-message fallback
+   only. (B) UI — either the message list collapses a thread to one row + count badge (Spark
+   style, bigger list rewrite) or the reader shows the whole conversation stacked (less
+   invasive). Not yet decided.
+6. Smart group **People** (exclude bulk + positive signal: sender appears as a recipient in
+   the Sent cache) + custom filter groups.
+7. **Focused Stream** — declutter the inbox by pulling read newsletters/notifications out of
+   the stream (reading = triage; they retreat to their sidebar group). Concept written up in
+   `docs/design/focused-inbox.md`. Not built; a distinct take on Spark's inline bundling.
 6. Cross-account full-text search (FULLTEXT index exists).
 7. Scheduled send (table exists; cron dispatcher planned).
 8. Gravatar in avatars; move "Add account" into the settings modal; retire standalone
@@ -154,4 +165,9 @@ Working end-to-end, live with 3 real accounts:
    column needed) and drives the account list in the left sidebar.
 10. **Reader icon bar** in the reserved gap above the mail body (28px top margin already in
     place): print, save as PDF, per-mail light/dark rendering toggle, ….
-11. Eventually: a proper installer / DB-migration story.
+11. **Batch message actions** — today each row action (read/pin/archive/trash) is its own
+    HTTP request opening its own IMAP connection (connect→op→disconnect), and same-session
+    requests serialize behind PHP's session lock. Fine for a few, slow for bulk (e.g. delete
+    50 = 50 connections). Add a batch endpoint: one IMAP connection, multiple UIDs in one
+    command (IMAP MOVE/STORE accept UID sets). UI stays optimistic regardless.
+12. Eventually: a proper installer / DB-migration story.
