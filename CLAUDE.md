@@ -139,12 +139,17 @@ Working end-to-end, live with 3 real accounts:
 
 1. **Archive flow** (move to `INBOX.Archive`, scope-aware like Sent — `FolderResolver` +
    `Message::move()` groundwork is in place).
-2. **Read-sync** (`\Seen`) and **star** (`\Flagged`) mirrored to IMAP.
+2. **Read-sync** (`\Seen`) and **pin** (`\Flagged`) writes mirrored to IMAP. Naming: Barua
+   calls `\Flagged` "Pinned" (Spark-style) — "Starred" is not used in the UI. The pinned
+   VIEW (read side) already works; writing the flag from Barua is what's left.
 3. **HTML email rendering** with sanitization (currently plain-text only — XSS-safe by default).
 4. **Draft autosave** + Drafts view.
-5. Smart groups (People/Newsletters/Notifications/Starred) + custom filter groups.
+5. Smart groups (People/Newsletters/Notifications) + custom filter groups.
 6. Cross-account full-text search (FULLTEXT index exists).
 7. Scheduled send (table exists; cron dispatcher planned).
 8. Gravatar in avatars; move "Add account" into the settings modal; retire standalone
    `/accounts` page.
-9. Eventually: a proper installer / DB-migration story.
+9. **Account ordering:** accounts sortable via drag & drop in Settings → Accounts & Colours
+   (drag handle icon left of the account name); the order persists (`accounts.sort_order`
+   column needed) and drives the account list in the left sidebar.
+10. Eventually: a proper installer / DB-migration story.

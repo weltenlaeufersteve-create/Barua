@@ -23,11 +23,16 @@ $buildUrl = function (?int $account, string $folderView): string {
     return '/' . (empty($params) ? '' : '?' . http_build_query($params));
 };
 
-// Folder view = scope (all / account) × folder (inbox / sent).
+// Folder view = scope (all / account) × folder (inbox / sent / pinned).
+$pinnedCount = MessageRepository::pinnedCount($activeAccountId);
 if ($view === 'sent') {
     $rows = MessageRepository::sentMessages(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Sent';
     $listSubtitle = $activeAccount ? 'Sent' : 'All accounts';
+} elseif ($view === 'pinned') {
+    $rows = MessageRepository::pinnedMessages(100, $activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'Pinned';
+    $listSubtitle = $activeAccount ? 'Pinned' : 'All accounts';
 } else {
     $rows = MessageRepository::unifiedInbox(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
@@ -129,7 +134,7 @@ foreach ($rows as $row) {
 
       <div class="sidebar__divider"></div>
 
-      <div class="sidebar__item"><?= sidebarIcon('pinned') ?> Pinned</div>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count"><?= $pinnedCount ?: '' ?></span></a>
       <div class="sidebar__item"><?= sidebarIcon('drafts') ?> Drafts</div>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'sent')) ?>" class="sidebar__item<?= $view === 'sent' ? ' is-active' : '' ?>"><?= sidebarIcon('sent') ?> Sent <span class="sidebar__count"><?= $sentCount ?: '' ?></span></a>
       <div class="sidebar__item"><?= sidebarIcon('archive') ?> Archive</div>
@@ -140,7 +145,6 @@ foreach ($rows as $row) {
       <div class="sidebar__item"><?= sidebarIcon('people') ?> People</div>
       <div class="sidebar__item"><?= sidebarIcon('newsletters') ?> Newsletters</div>
       <div class="sidebar__item"><?= sidebarIcon('notifications') ?> Notifications</div>
-      <div class="sidebar__item"><?= sidebarIcon('starred') ?> Starred</div>
 
       <div class="sidebar__spacer"></div>
       <div class="sidebar__divider"></div>
@@ -170,7 +174,13 @@ foreach ($rows as $row) {
 
       <?php if (empty($rows)): ?>
         <div style="padding: 24px 20px; color: var(--text-tertiary); font-size: 13.5px;">
-          <?= $view === 'sent' ? 'No sent messages yet.' : 'No messages yet. Click ⟳ to sync your accounts.' ?>
+          <?php if ($view === 'sent'): ?>
+            No sent messages yet.
+          <?php elseif ($view === 'pinned'): ?>
+            No pinned messages. Pin mail on any device (IMAP flag) and it shows up here.
+          <?php else: ?>
+            No messages yet. Click ⟳ to sync your accounts.
+          <?php endif; ?>
         </div>
       <?php endif; ?>
 

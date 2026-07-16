@@ -47,7 +47,7 @@ No Electron, no desktop app, no team features. Just a snappy, well-designed pers
   - **People** — direct human senders (not bulk)
   - **Newsletters** — List-Unsubscribe header present
   - **Notifications** — automated/transactional
-  - **Starred** — manually starred by user
+  - **Pinned** — manually pinned by user (IMAP `\Flagged`; Spark-style naming, no stars in the UI)
 - Groups displayed as pinned tabs/sidebar items
 - User can pin/unpin and rename groups
 - Groups work across all accounts
@@ -112,11 +112,14 @@ CREATE TABLE message_groups (
 - Primary actions: **Read → Reply → Archive**
 - Archive removes from inbox (moves to IMAP Archive folder or adds `\Archive` flag)
 - No folder browser — folders are hidden; Archive is the exit
-- Keyboard shortcuts: `R` reply, `E` archive, `S` star, `F` forward
+- Keyboard shortcuts: `R` reply, `E` archive, `P` pin, `F` forward
 
-### 7. Starred Emails
-- Star toggles a local flag in MariaDB AND syncs IMAP `\Flagged` flag
-- Starred group always accessible in sidebar
+### 7. Pinned Emails
+- **Naming decision:** Barua calls IMAP `\Flagged` "Pinned" (like Spark) — the term "Starred"
+  is not used anywhere in the UI ("Sternchen sind überbenutzt")
+- Pin toggles a local flag in MariaDB AND syncs the IMAP `\Flagged` flag (so pins made on the
+  phone or in other clients appear in Barua and vice versa)
+- Pinned view always accessible in the sidebar, scope-aware (unified or per account)
 
 ### 8. Scheduled Send
 - Compose window has "Send Later" option with datetime picker

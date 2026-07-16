@@ -60,6 +60,39 @@ class MessageRepository
         }, $rows);
     }
 
+    /** Pinned = IMAP \Flagged (stored as is_starred). Spark-style naming — no stars in the UI. */
+    public static function pinnedMessages(int $limit = 100, ?int $accountId = null): array
+    {
+        $where = "m.folder_role = 'inbox' AND m.is_starred = 1 AND m.is_archived = 0";
+        $params = [];
+        if ($accountId !== null) {
+            $where .= ' AND m.account_id = ?';
+            $params[] = $accountId;
+        }
+        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
+                FROM messages m
+                JOIN accounts a ON a.id = m.account_id
+                WHERE $where
+                ORDER BY m.date_sent DESC
+                LIMIT " . (int) $limit;
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public static function pinnedCount(?int $accountId = null): int
+    {
+        $where = "folder_role = 'inbox' AND is_starred = 1 AND is_archived = 0";
+        $params = [];
+        if ($accountId !== null) {
+            $where .= ' AND account_id = ?';
+            $params[] = $accountId;
+        }
+        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function sentCount(?int $accountId = null): int
     {
         $where = "folder_role = 'sent'";

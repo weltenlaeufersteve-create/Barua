@@ -178,6 +178,55 @@ class SyncService
             $removed = $del->rowCount();
         }
 
+        // Pinned sweep: pins are few but often OLD (far below the sync window), so mirror
+        // IMAP \Flagged across the WHOLE folder via a targeted FLAGGED search. Ensures the
+        // Pinned view matches other clients (Spark, phone) even for years-old mail.
+        try {
+            // NB: use where('FLAGGED') — webklex's whereFlagged() convenience method
+            // wrongly demands a value argument.
+            $flaggedLight = $folder->messages()->where('FLAGGED')->setFetchBody(false)->get();
+            $flaggedUids = [];
+            foreach ($flaggedLight as $m) {
+                $fuid = (int) self::scalar($m->getUid());
+                if ($fuid) {
+                    $flaggedUids[] = $fuid;
+                }
+            }
+
+            if (!empty($flaggedUids)) {
+                $ph = implode(',', array_fill(0, count($flaggedUids), '?'));
+                $stmt = $db->prepare("SELECT imap_uid FROM messages WHERE account_id = ? AND folder = ? AND imap_uid IN ($ph)");
+                $stmt->execute(array_merge([$accountId, $folder->path], $flaggedUids));
+                $have = array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+                $missing = array_diff($flaggedUids, $have);
+
+                // Fetch bodies only for pinned mails we have never cached.
+                if (!empty($missing)) {
+                    $flaggedFull = $folder->messages()->where('FLAGGED')->get();
+                    foreach ($flaggedFull as $message) {
+                        $fuid = (int) self::scalar($message->getUid());
+                        if (in_array($fuid, $missing, true) && self::store($accountId, $folder->path, $role, $message)) {
+                            $new++;
+                        }
+                    }
+                }
+
+                // Cache flag state mirrors the server exactly (pin + unpin).
+                $upd1 = $db->prepare("UPDATE messages SET is_starred = 1 WHERE account_id = ? AND folder = ? AND is_starred = 0 AND imap_uid IN ($ph)");
+                $upd1->execute(array_merge([$accountId, $folder->path], $flaggedUids));
+                $flags += $upd1->rowCount();
+                $upd0 = $db->prepare("UPDATE messages SET is_starred = 0 WHERE account_id = ? AND folder = ? AND is_starred = 1 AND imap_uid NOT IN ($ph)");
+                $upd0->execute(array_merge([$accountId, $folder->path], $flaggedUids));
+                $flags += $upd0->rowCount();
+            } else {
+                $upd0 = $db->prepare('UPDATE messages SET is_starred = 0 WHERE account_id = ? AND folder = ? AND is_starred = 1');
+                $upd0->execute([$accountId, $folder->path]);
+                $flags += $upd0->rowCount();
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: a failed pin sweep must not break the folder sync.
+        }
+
         return ['checked' => count($server), 'new' => $new, 'flags' => $flags, 'removed' => $removed];
     }
 
