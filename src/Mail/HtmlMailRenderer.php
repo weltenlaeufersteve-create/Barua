@@ -29,7 +29,9 @@ class HtmlMailRenderer
             . '<meta http-equiv="Content-Security-Policy" content="' . htmlspecialchars(self::csp($remoteImages), ENT_QUOTES) . '">'
             . '<base target="_blank">'
             . '<style>'
-            . "body{margin:14px;font-family:-apple-system,'Segoe UI',sans-serif;font-size:14px;"
+            // 32px side margin aligns the mail text with the reader's content column
+            // (subject/meta/imgbar all sit on the same 32px grid).
+            . "body{margin:24px 32px;font-family:-apple-system,'Segoe UI',sans-serif;font-size:14px;"
             . 'line-height:1.55;color:#1d1f21;background:#ffffff;word-wrap:break-word;}'
             . 'img{max-width:100%;height:auto;}'
             . 'table{max-width:100%;}'
