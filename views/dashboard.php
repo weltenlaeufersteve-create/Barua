@@ -191,6 +191,11 @@ foreach ($rows as $row) {
           $isSelected = $selected && $row['id'] === $selected['id'];
         ?>
           <div class="mail-row<?= $isUnread ? ' is-unread' : '' ?><?= $isSelected ? ' is-selected' : '' ?>" data-msg="<?= (int) $row['id'] ?>" data-account="<?= (int) $row['account_id'] ?>">
+            <div class="mail-row__actions">
+              <span class="row-action row-action--pin<?= (int) $row['is_starred'] === 1 ? ' is-pinned' : '' ?>" title="Pin"><?= sidebarIcon('pinned') ?></span>
+              <span class="row-action" title="Archive"><?= sidebarIcon('archive') ?></span>
+              <span class="row-action" title="Delete"><?= sidebarIcon('trash') ?></span>
+            </div>
             <span class="mail-row__stripe" style="background: <?= htmlspecialchars($row['account_colour']) ?>"></span>
             <div class="mail-row__body">
               <div class="mail-row__top">
@@ -265,6 +270,11 @@ foreach ($rows as $row) {
 
         document.body.setAttribute('data-mobile-view', 'reader');
       });
+    });
+
+    // Row action icons are display-only for now — swallow clicks so they don't open the mail.
+    document.querySelectorAll('.row-action').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.stopPropagation(); });
     });
 
     document.querySelectorAll('[data-go]').forEach(function (el) {
