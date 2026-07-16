@@ -50,7 +50,7 @@ if ($path === '/' || $path === '') {
     $username = $_SESSION['user'];
     $csrfToken = Auth::csrfToken();
     $activeAccountId = isset($_GET['account']) ? (int) $_GET['account'] : null;
-    $view = in_array($_GET['view'] ?? '', ['sent', 'pinned', 'archive', 'trash', 'drafts', 'newsletters', 'notifications'], true) ? $_GET['view'] : 'inbox';
+    $view = in_array($_GET['view'] ?? '', ['sent', 'pinned', 'archive', 'trash', 'drafts', 'newsletters', 'notifications', 'people'], true) ? $_GET['view'] : 'inbox';
     require __DIR__ . '/../views/dashboard.php';
     return;
 }
@@ -116,6 +116,12 @@ if ($path === '/compose/send' && $method === 'POST') {
     ];
     $result = \Barua\Mail\MailSender::send($account, $payload);
     if ($result['ok']) {
+        // Recipients become correspondents immediately (feeds the People group).
+        foreach (['to', 'cc', 'bcc'] as $field) {
+            foreach (\Barua\Mail\MailSender::parseAddresses($payload[$field]) as $addr) {
+                \Barua\Mail\CorrespondentRepository::upsert($addr, '', gmdate('Y-m-d H:i:s'));
+            }
+        }
         // MailSender already appended the copy to the IMAP Sent folder; pull it into the cache.
         \Barua\Mail\SyncService::syncSentFolder($account);
         // A sent draft is done — clean it up.

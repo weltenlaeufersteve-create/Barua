@@ -48,6 +48,10 @@ if ($view === 'sent') {
     $groupLabel = ucfirst($view);
     $listTitle = $activeAccount ? $activeAccount['label'] : $groupLabel;
     $listSubtitle = $activeAccount ? $groupLabel : 'All accounts';
+} elseif ($view === 'people') {
+    $rows = MessageRepository::peopleMessages(100, $activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'People';
+    $listSubtitle = $activeAccount ? 'People' : 'All accounts';
 } else {
     $rows = MessageRepository::unifiedInbox(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
@@ -175,7 +179,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'trash')) ?>" class="sidebar__item<?= $view === 'trash' ? ' is-active' : '' ?>"><?= sidebarIcon('trash') ?> Trash <span class="sidebar__count"><?= MessageRepository::roleCount('trash', $activeAccountId) ?: '' ?></span></a>
 
       <div class="sidebar__section-header">Groups</div>
-      <div class="sidebar__item"><?= sidebarIcon('people') ?> People</div>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'people')) ?>" class="sidebar__item<?= $view === 'people' ? ' is-active' : '' ?>"><?= sidebarIcon('people') ?> People <span class="sidebar__count"><?= MessageRepository::peopleUnread($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'newsletters')) ?>" class="sidebar__item<?= $view === 'newsletters' ? ' is-active' : '' ?>"><?= sidebarIcon('newsletters') ?> Newsletters <span class="sidebar__count"><?= MessageRepository::groupUnread('newsletter', $activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'notifications')) ?>" class="sidebar__item<?= $view === 'notifications' ? ' is-active' : '' ?>"><?= sidebarIcon('notifications') ?> Notifications <span class="sidebar__count"><?= MessageRepository::groupUnread('notification', $activeAccountId) ?: '' ?></span></a>
 
@@ -217,6 +221,8 @@ foreach ($isDraftView ? [] : $rows as $row) {
             Trash is empty (within the sync window).
           <?php elseif ($view === 'drafts'): ?>
             No drafts. Start writing in the composer — it autosaves here.
+          <?php elseif ($view === 'people'): ?>
+            No people mail yet. Reply to someone once and their mail shows up here.
           <?php elseif ($view === 'newsletters'): ?>
             No newsletters detected (within the synced range).
           <?php elseif ($view === 'notifications'): ?>

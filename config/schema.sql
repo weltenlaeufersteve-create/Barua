@@ -122,6 +122,16 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   INDEX idx_ip_time (ip_address, attempted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- People you have written to (fed by Sent-folder sync + the send flow).
+-- Powers the "People" smart group; later also composer autocomplete.
+CREATE TABLE IF NOT EXISTS correspondents (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  name VARCHAR(255) DEFAULT '',
+  last_used DATETIME NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(100) NOT NULL UNIQUE,

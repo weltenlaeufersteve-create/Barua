@@ -387,7 +387,35 @@ class SyncService
             $groupType,
         ]);
 
+        // Sent mail = proof of correspondence: harvest recipient addresses for People.
+        if ($folderRole === 'sent') {
+            self::recordCorrespondents($message, $dateSent);
+        }
+
         return true;
+    }
+
+    /** Upsert every To/Cc address of an outgoing message into correspondents. */
+    private static function recordCorrespondents($message, ?string $dateSent): void
+    {
+        try {
+            $all = [];
+            foreach (['getTo', 'getCc'] as $getter) {
+                try {
+                    $list = $message->$getter();
+                    $list = is_array($list) ? $list : ($list !== null ? $list->all() : []);
+                    $all = array_merge($all, $list);
+                } catch (\Throwable $e) {
+                }
+            }
+            foreach ($all as $addr) {
+                $email = (string) ($addr->mail ?? '');
+                $name = trim(self::decodeMime(trim((string) ($addr->personal ?? ''))), "\"'");
+                CorrespondentRepository::upsert($email, $name, $dateSent);
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: correspondent harvesting must never break a sync.
+        }
     }
 
     /** Comma-joined "To" recipients (display name or address), for the Sent view. */
