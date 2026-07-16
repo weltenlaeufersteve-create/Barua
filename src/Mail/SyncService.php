@@ -111,7 +111,7 @@ class SyncService
 
         // Pass 1: cheap — no bodies.
         $light = $folder->messages()->all()->setFetchBody(false)->setFetchOrder('desc')->limit($limit)->get();
-        $server = []; // uid => ['read' => 0|1, 'star' => 0|1]
+        $server = []; // uid => ['read' => 0|1, 'star' => 0|1, 'group' => string]
         foreach ($light as $m) {
             $uid = (int) self::scalar($m->getUid());
             if ($uid === 0) {
@@ -124,11 +124,15 @@ class SyncService
                 $star = $m->getFlags()->contains('Flagged') ? 1 : 0;
             } catch (\Throwable $e) {
             }
-            $server[$uid] = ['read' => $read, 'star' => $star];
+            $server[$uid] = [
+                'read'  => $read,
+                'star'  => $star,
+                'group' => self::classify($m, self::firstFrom($m)['email']),
+            ];
         }
 
         // Cached state for this folder.
-        $stmt = $db->prepare('SELECT imap_uid, is_read, is_starred FROM messages WHERE account_id = ? AND folder = ?');
+        $stmt = $db->prepare('SELECT imap_uid, is_read, is_starred, group_type FROM messages WHERE account_id = ? AND folder = ?');
         $stmt->execute([$accountId, $folder->path]);
         $cached = [];
         foreach ($stmt->fetchAll() as $row) {
@@ -147,15 +151,18 @@ class SyncService
             }
         }
 
-        // Mirror flag changes (read on the phone, starred elsewhere, …).
+        // Mirror flag changes (read on the phone, starred elsewhere, …) and keep the
+        // smart-group classification of the window current.
         $flags = 0;
-        $upd = $db->prepare('UPDATE messages SET is_read = ?, is_starred = ? WHERE account_id = ? AND folder = ? AND imap_uid = ?');
+        $upd = $db->prepare('UPDATE messages SET is_read = ?, is_starred = ?, group_type = ? WHERE account_id = ? AND folder = ? AND imap_uid = ?');
         foreach ($server as $uid => $f) {
             if (!isset($cached[$uid])) {
                 continue;
             }
-            if ((int) $cached[$uid]['is_read'] !== $f['read'] || (int) $cached[$uid]['is_starred'] !== $f['star']) {
-                $upd->execute([$f['read'], $f['star'], $accountId, $folder->path, $uid]);
+            if ((int) $cached[$uid]['is_read'] !== $f['read']
+                || (int) $cached[$uid]['is_starred'] !== $f['star']
+                || $cached[$uid]['group_type'] !== $f['group']) {
+                $upd->execute([$f['read'], $f['star'], $f['group'], $accountId, $folder->path, $uid]);
                 $flags++;
             }
         }
@@ -248,6 +255,42 @@ class SyncService
         }
     }
 
+    /**
+     * Smart-group classification. webklex's parsed header attributes are unreliable
+     * (folded headers get mangled), so we regex the RAW header text instead.
+     *   newsletter   — subscribed bulk content: List-Unsubscribe / List-Id / Precedence bulk|list
+     *   notification — event-triggered automation: Auto-Submitted, or a no-reply-style sender
+     *   other        — everything else ("People" refinement comes later)
+     */
+    public static function classify($message, string $fromEmail): string
+    {
+        $raw = '';
+        try {
+            $raw = (string) $message->getHeader()->raw;
+        } catch (\Throwable $e) {
+        }
+
+        if ($raw !== '') {
+            if (preg_match('/^list-(unsubscribe|id):/im', $raw)) {
+                return 'newsletter';
+            }
+            if (preg_match('/^precedence:\s*(bulk|list)/im', $raw)) {
+                return 'newsletter';
+            }
+            if (preg_match('/^auto-submitted:\s*auto/im', $raw)) {
+                return 'notification';
+            }
+        }
+
+        $local = strtolower(strstr($fromEmail, '@', true) ?: $fromEmail);
+        if (preg_match('/^(no-?reply|do-?not-?reply|notifications?|notify|mailer(-daemon)?|postmaster|alerts?|auto(mail(er)?)?|system|robot|daemon|bounces?)([.\-_+]|$)/', $local)
+            || preg_match('/([.\-_+]|^)no-?reply([.\-_+]|$)/', $local)) {
+            return 'notification';
+        }
+
+        return 'other';
+    }
+
     private static function store(int $accountId, string $folderPath, string $folderRole, $message): bool
     {
         $uid = (int) self::scalar($message->getUid());
@@ -297,12 +340,15 @@ class SyncService
         // Stage 1: thread_id falls back to the message's own id; proper threading is Stage 2.
         $threadId = $inReplyTo !== '' ? $inReplyTo : $messageId;
 
+        $groupType = self::classify($message, $from['email']);
+
         $sql = 'INSERT INTO messages
                     (account_id, folder, folder_role, imap_uid, message_id, in_reply_to, thread_id, subject,
                      sender_name, sender_email, recipients, date_sent, body_snippet, body_html, body_plain,
-                     body_cached, is_read, is_starred, has_attachments)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+                     body_cached, is_read, is_starred, has_attachments, group_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
+                    group_type = VALUES(group_type),
                     folder_role = VALUES(folder_role),
                     is_read = VALUES(is_read),
                     is_starred = VALUES(is_starred),
@@ -338,6 +384,7 @@ class SyncService
             $isRead,
             $isStarred,
             $hasAttachments,
+            $groupType,
         ]);
 
         return true;

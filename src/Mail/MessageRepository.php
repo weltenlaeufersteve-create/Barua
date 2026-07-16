@@ -93,6 +93,40 @@ class MessageRepository
         return (int) $stmt->fetchColumn();
     }
 
+    /** Smart-group view: inbox messages of one group_type (newsletter/notification/people). */
+    public static function groupMessages(string $type, int $limit = 100, ?int $accountId = null): array
+    {
+        $where = "m.folder_role = 'inbox' AND m.group_type = ? AND m.is_archived = 0";
+        $params = [$type];
+        if ($accountId !== null) {
+            $where .= ' AND m.account_id = ?';
+            $params[] = $accountId;
+        }
+        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
+                FROM messages m
+                JOIN accounts a ON a.id = m.account_id
+                WHERE $where
+                ORDER BY m.date_sent DESC
+                LIMIT " . (int) $limit;
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /** Unread count for one smart group (sidebar badge). */
+    public static function groupUnread(string $type, ?int $accountId = null): int
+    {
+        $where = "folder_role = 'inbox' AND group_type = ? AND is_read = 0 AND is_archived = 0";
+        $params = [$type];
+        if ($accountId !== null) {
+            $where .= ' AND account_id = ?';
+            $params[] = $accountId;
+        }
+        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
     /**
      * Pinned = IMAP \Flagged (stored as is_starred). Spark-style naming — no stars in the UI.
      * Includes archived pins (Spark's pin list spans folders); trash pins stay out.
