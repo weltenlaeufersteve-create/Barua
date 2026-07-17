@@ -93,6 +93,7 @@ function mailRowData(array $row): array
         'accountColour' => $row['account_colour'],
         'messageId'     => $row['message_id'] ?? '',
         'time'          => MessageRepository::timeLabel($row['date_sent']),
+        'fullTime'      => MessageRepository::fullTimeLabel($row['date_sent']),
         'initial'       => initial($row),
         'hasHtml'       => trim($row['body_html'] ?? '') !== '',
         'body'          => $body !== '' ? $body : '(No text content)',

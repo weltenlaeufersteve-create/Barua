@@ -297,4 +297,11 @@ class MessageRepository
         }
         return $dt->format('M j');
     }
+
+    /** Full date + 24h time for the reader header, e.g. "16 Jul 2026, 14:30". */
+    public static function fullTimeLabel(?string $dateSent): string
+    {
+        $dt = self::toLocal($dateSent);
+        return $dt ? $dt->format('j M Y, H:i') : '';
+    }
 }

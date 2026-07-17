@@ -236,7 +236,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
             <div class="reader__from-name"><?= htmlspecialchars($selected['sender_name'] !== '' ? $selected['sender_name'] : $selected['sender_email']) ?></div>
             <div class="reader__from-email"><?= htmlspecialchars($selected['sender_email']) ?> · <?= htmlspecialchars($selected['account_label']) ?></div>
           </div>
-          <div class="reader__time"><?= htmlspecialchars(MessageRepository::timeLabel($selected['date_sent'])) ?></div>
+          <div class="reader__time"><?= htmlspecialchars(MessageRepository::fullTimeLabel($selected['date_sent'])) ?></div>
         </div>
         <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
         <div class="reader__body" id="reader-body"<?= $selHasHtml ? ' style="display:none"' : '' ?>><?php
@@ -425,7 +425,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         avatar.setAttribute('data-account', msg.accountId);
         meta.querySelector('.reader__from-name').textContent = msg.sender;
         meta.querySelector('.reader__from-email').textContent = msg.email + ' · ' + msg.accountLabel;
-        meta.querySelector('.reader__time').textContent = msg.time;
+        meta.querySelector('.reader__time').textContent = msg.fullTime;
 
         document.body.setAttribute('data-mobile-view', 'reader');
       });
