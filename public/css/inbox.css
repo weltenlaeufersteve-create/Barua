@@ -187,6 +187,9 @@
   justify-content: center;
   cursor: pointer;
   color: var(--text-secondary);
+  background: transparent; /* reset UA <button> box (icon-btn is used on buttons too) */
+  border: none;
+  padding: 0;
 }
 .icon-btn:hover { background: var(--hover-bg); }
 
