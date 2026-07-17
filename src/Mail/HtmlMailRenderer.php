@@ -23,18 +23,30 @@ class HtmlMailRenderer
         return "default-src 'none'; {$img}; style-src 'unsafe-inline'; font-src data:; form-action 'none'; base-uri 'none'";
     }
 
-    public static function document(string $html, bool $remoteImages): string
+    public static function document(string $html, bool $remoteImages, bool $dark = false): string
     {
+        // Email HTML is authored for a light background. For dark mode we use the well-known
+        // "dark reader" trick: invert + hue-rotate the body (whites → dark, dark text → light,
+        // hues roughly preserved), then re-invert media so images/videos look normal.
+        // In dark mode the document is TRANSPARENT so the reader's own theme background
+        // (--reader-bg, the darkest theme surface) shows through — no hard black, no frame.
+        $bg = $dark ? 'transparent' : '#ffffff';
+        $darkCss = $dark
+            ? 'body{filter:invert(1) hue-rotate(180deg);}'
+              . 'img,video,picture,[style*="background-image"]{filter:invert(1) hue-rotate(180deg);}'
+            : '';
+
         return '<!DOCTYPE html><html><head><meta charset="utf-8">'
             . '<meta http-equiv="Content-Security-Policy" content="' . htmlspecialchars(self::csp($remoteImages), ENT_QUOTES) . '">'
             . '<base target="_blank">'
             . '<style>'
-            // 32px side margin aligns the mail text with the reader's content column
-            // (subject/meta/imgbar all sit on the same 32px grid).
+            . "html{background:{$bg};}"
+            // 32px side margin aligns the mail text with the reader's content column.
             . "body{margin:24px 32px;font-family:-apple-system,'Segoe UI',sans-serif;font-size:14px;"
-            . 'line-height:1.55;color:#1d1f21;background:#ffffff;word-wrap:break-word;}'
+            . "line-height:1.55;color:#1d1f21;background:{$bg};word-wrap:break-word;}"
             . 'img{max-width:100%;height:auto;}'
             . 'table{max-width:100%;}'
+            . $darkCss
             . '</style>'
             . '</head><body>' . self::sanitize($html) . '</body></html>';
     }

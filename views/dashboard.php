@@ -227,9 +227,12 @@ foreach ($isDraftView ? [] : $rows as $row) {
           echo htmlspecialchars($selBody !== '' ? $selBody : '(No text content)');
         ?></div>
         <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>
+          <div class="reader__floatbar" id="reader-floatbar">
+            <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
+            <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+          </div>
           <div class="reader__imgbar" id="reader-imgbar">Remote images blocked · <span id="load-images">Load images</span></div>
-          <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox"
-                  <?= $selHasHtml ? 'src="/messages/' . (int) $selected['id'] . '/html"' : '' ?>></iframe>
+          <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
         </div>
       </div>
       <div class="reader__toolbar">
@@ -249,29 +252,75 @@ foreach ($isDraftView ? [] : $rows as $row) {
     var messages = <?= json_encode($jsMessages, JSON_UNESCAPED_UNICODE) ?>;
     var currentMsgId = <?= $selected ? (int) $selected['id'] : 'null' ?>;
 
-    // Plain text vs sandboxed HTML iframe in the reader.
+    // HTML mail rendering: follows the current theme (dark mail on dark themes),
+    // remote images blocked by default, toggleable via the floating icon row.
+    var themeMode = (localStorage.getItem('barua_theme') || 'dark-neutral').split('-')[0];
+    var readerImages = false;
+    var readerDark = themeMode === 'dark';
+
+    var SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+    var MOON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
+    function readerFrameSrc() {
+      var p = [];
+      if (readerImages) p.push('images=1');
+      if (readerDark) p.push('dark=1');
+      return '/messages/' + currentMsgId + '/html' + (p.length ? '?' + p.join('&') : '');
+    }
+    function loadReaderFrame() {
+      var frame = document.getElementById('reader-frame');
+      if (frame && currentMsgId) frame.src = readerFrameSrc();
+    }
+    function updateThemeToggleIcon() {
+      var btn = document.getElementById('reader-theme');
+      if (btn) btn.innerHTML = readerDark ? SUN_SVG : MOON_SVG; // shows what you'll switch TO
+    }
+
     function showReaderBody(msg) {
       var plain = document.getElementById('reader-body');
       var wrap = document.getElementById('reader-html');
-      var frame = document.getElementById('reader-frame');
       var imgbar = document.getElementById('reader-imgbar');
       if (!wrap) return;
       if (msg.hasHtml) {
         plain.style.display = 'none';
         wrap.style.display = '';
         imgbar.style.display = '';
-        frame.src = '/messages/' + currentMsgId + '/html';
+        readerImages = false;            // reset per message
+        readerDark = themeMode === 'dark';
+        updateThemeToggleIcon();
+        loadReaderFrame();
       } else {
         plain.style.display = '';
         wrap.style.display = 'none';
       }
     }
+
     var loadImagesBtn = document.getElementById('load-images');
     if (loadImagesBtn) loadImagesBtn.addEventListener('click', function () {
-      if (!currentMsgId) return;
-      document.getElementById('reader-frame').src = '/messages/' + currentMsgId + '/html?images=1';
+      readerImages = true;
+      loadReaderFrame();
       document.getElementById('reader-imgbar').style.display = 'none';
     });
+
+    var themeToggleBtn = document.getElementById('reader-theme');
+    if (themeToggleBtn) themeToggleBtn.addEventListener('click', function () {
+      readerDark = !readerDark;
+      updateThemeToggleIcon();
+      loadReaderFrame();
+    });
+
+    var printBtn = document.getElementById('reader-print');
+    if (printBtn) printBtn.addEventListener('click', function () {
+      var frame = document.getElementById('reader-frame');
+      try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {}
+    });
+
+    // Initialise the frame for the pre-selected message (respecting the theme).
+    updateThemeToggleIcon();
+    (function () {
+      var sel = currentMsgId ? messages[currentMsgId] : null;
+      if (sel && sel.hasHtml) loadReaderFrame();
+    })();
 
     // Row actions: pin toggle (IMAP \Flagged), archive, trash — server write + cache + UI.
     var mainCsrf = <?= json_encode($csrfToken) ?>;

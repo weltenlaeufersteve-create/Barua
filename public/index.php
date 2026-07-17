@@ -183,6 +183,7 @@ if (preg_match('#^/messages/(\d+)/html$#', $path, $m) && $method === 'GET') {
         return;
     }
     $remote = ($_GET['images'] ?? '') === '1';
+    $dark = ($_GET['dark'] ?? '') === '1';
     $html = trim($msg['body_html'] ?? '');
     if ($html === '') {
         $html = nl2br(htmlspecialchars($msg['body_plain'] ?? ''));
@@ -190,7 +191,7 @@ if (preg_match('#^/messages/(\d+)/html$#', $path, $m) && $method === 'GET') {
     header('Content-Type: text/html; charset=utf-8');
     header('Content-Security-Policy: ' . \Barua\Mail\HtmlMailRenderer::csp($remote));
     header('X-Content-Type-Options: nosniff');
-    echo \Barua\Mail\HtmlMailRenderer::document($html, $remote);
+    echo \Barua\Mail\HtmlMailRenderer::document($html, $remote, $dark);
     return;
 }
 

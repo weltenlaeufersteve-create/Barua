@@ -355,6 +355,7 @@
 .reader__content { display: flex; flex-direction: column; }
 .reader__subject, .reader__meta { flex-shrink: 0; }
 .reader__htmlwrap {
+  position: relative;
   flex: 1;
   min-height: 380px;
   display: flex;
@@ -379,10 +380,31 @@
   min-height: 360px;
   width: 100%;
   border: none;
-  border-top: 1px solid var(--border);
   border-radius: 0;
-  background: #fff;
+  background: transparent; /* dark mail lets the theme --reader-bg show through */
 }
+
+/* Floating icon row inside the email, top-right (Outlook-style). */
+.reader__floatbar {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 4;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+.reader__floatbar .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+}
+.reader__floatbar .icon-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
 
 .reader__toolbar {
   display: flex;
