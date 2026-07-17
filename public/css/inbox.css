@@ -23,7 +23,7 @@
 }
 .sidebar__footer {
   flex-shrink: 0;
-  padding: 6px 12px 12px;
+  padding: 0 12px 12px;
   background: var(--sidebar-bg);
 }
 
@@ -99,7 +99,7 @@
   flex-shrink: 0;             /* never let the flex column squash the 1px line to nothing */
   background: var(--border);
   /* full-width: cancel the sidebar's 12px horizontal padding so it spans edge to edge */
-  margin: 10px -12px;
+  margin: 0 -12px 10px;
 }
 
 .sidebar__section-header {
