@@ -1,8 +1,25 @@
 <?php
 $composeAccounts = \Barua\Accounts\AccountRepository::all();
+// Map each account to its assigned signature. The compose editor is plain text, so we
+// always carry a `plain` form for the textarea; `html` (non-empty only for HTML sigs)
+// is spliced back in on send so the recipient gets the real HTML signature.
 $composeSignatures = [];
 foreach ($composeAccounts as $ca) {
-    $composeSignatures[(int) $ca['id']] = $ca['signature'] ?? '';
+    $sig = null;
+    if (!empty($ca['signature_id'])) {
+        $sig = \Barua\Mail\SignatureRepository::find((int) $ca['signature_id']);
+    }
+    if ($sig === null) {
+        $composeSignatures[(int) $ca['id']] = ['format' => 'plain', 'plain' => '', 'html' => ''];
+        continue;
+    }
+    if ($sig['format'] === 'html') {
+        // Readable plain rendering for the textarea: drop tags, collapse <br> to newlines.
+        $plain = trim(html_entity_decode(strip_tags(preg_replace('#<br\s*/?>#i', "\n", $sig['body'])), ENT_QUOTES, 'UTF-8'));
+        $composeSignatures[(int) $ca['id']] = ['format' => 'html', 'plain' => $plain, 'html' => $sig['body']];
+    } else {
+        $composeSignatures[(int) $ca['id']] = ['format' => 'plain', 'plain' => $sig['body'], 'html' => ''];
+    }
 }
 ?>
 <style>
@@ -230,9 +247,30 @@ foreach ($composeAccounts as $ca) {
     var currentDraftId = null;
     var draftTimer = null;
 
+    function sigInfo(accountId) {
+      return signatures[accountId] || { format: 'plain', plain: '', html: '' };
+    }
+
+    // The plain text appended to the (plain-text) textarea for a given sender.
     function sigFor(accountId) {
-      var s = signatures[accountId];
-      return s ? ('\n\n-- \n' + s) : '';
+      var s = sigInfo(accountId);
+      return s.plain ? ('\n\n-- \n' + s.plain) : '';
+    }
+
+    function htmlEscape(t) {
+      return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // For HTML-signature accounts, build the HTML body: the typed text (escaped, newlines
+    // → <br>) followed by the real HTML signature. Returns '' for plain accounts, so the
+    // send stays plain-text exactly as before.
+    function buildHtmlBody() {
+      var s = sigInfo(currentFromId);
+      if (s.format !== 'html' || !s.html) return '';
+      var full = bodyI.value;
+      var sig = bodyI.dataset.sig || '';
+      var base = (sig && full.endsWith(sig)) ? full.slice(0, -sig.length) : full;
+      return htmlEscape(base).replace(/\n/g, '<br>') + '<br><br>-- <br>' + s.html;
     }
 
     function selectAccount(accountId, keepBody) {
@@ -385,6 +423,7 @@ foreach ($composeAccounts as $ca) {
       body.set('bcc', bccI.value);
       body.set('subject', subjI.value);
       body.set('body_plain', bodyI.value);
+      body.set('body_html', buildHtmlBody());
       body.set('in_reply_to', currentInReplyTo);
       body.set('references', currentReferences);
       body.set('draft_id', currentDraftId || '');

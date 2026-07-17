@@ -154,6 +154,27 @@
   .set-cancel { font-weight: 400; }
   .set-save:hover, .set-cancel:hover { background: var(--selected-bg); }
 
+  /* Signatures panel */
+  .set-sig-block { border-bottom: 1px solid var(--border); }
+  .set-sig { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+  .set-sig__info { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .set-sig__info strong { font-size: 14px; }
+  .set-sig__badge {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    padding: 2px 7px; border-radius: 999px;
+    background: var(--hover-bg); color: var(--text-tertiary);
+  }
+  .set-sig-format { display: flex; gap: 18px; margin: 12px 0 6px; }
+  .set-account__editform .set-sig-radio {
+    flex-direction: row; align-items: center; gap: 6px; cursor: pointer; margin-bottom: 0;
+  }
+  .set-sig-radio input { width: auto; }
+  .set-account__editform textarea {
+    padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--input-bg); color: var(--text-primary); font-size: 13px;
+    font-family: inherit; resize: vertical; width: 100%; box-sizing: border-box;
+  }
+
   /* Appearance tab */
   .appearance-row { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
   .appearance-opt {
@@ -184,6 +205,7 @@
       <?php
         $paletteColours = \Barua\Accounts\ColorPalette::all();
         $settingsAccounts = \Barua\Accounts\AccountRepository::all();
+        $settingsSignatures = \Barua\Mail\SignatureRepository::all();
       ?>
       <?php if (empty($settingsAccounts)): ?>
         <p style="color: var(--text-tertiary);">No accounts yet.</p>
@@ -250,7 +272,14 @@
             <label>Username<input type="text" name="smtp_username" value="<?= htmlspecialchars($sa['smtp_username']) ?>" required></label>
             <label>Password<input type="password" name="smtp_password" placeholder="leave blank to keep"></label>
           </div>
-          <label>Signature<input type="text" name="signature" value="<?= htmlspecialchars($sa['signature'] ?? '') ?>"></label>
+          <label>Signature
+            <select name="signature_id">
+              <option value="">— None —</option>
+              <?php foreach ($settingsSignatures as $sig): ?>
+                <option value="<?= (int) $sig['id'] ?>"<?= (int) ($sa['signature_id'] ?? 0) === (int) $sig['id'] ? ' selected' : '' ?>><?= htmlspecialchars($sig['name']) ?> (<?= strtoupper($sig['format']) ?>)</option>
+              <?php endforeach; ?>
+            </select>
+          </label>
           <div class="set-editactions">
             <button type="submit" class="set-save" style="border-color: <?= htmlspecialchars($sa['colour']) ?>">Save changes</button>
             <button type="button" class="set-cancel" data-edit-toggle style="border-color: <?= htmlspecialchars($sa['colour']) ?>">Cancel</button>
@@ -294,7 +323,14 @@
           <label>Username<input type="text" name="smtp_username" required></label>
           <label>Password<input type="password" name="smtp_password" required></label>
         </div>
-        <label>Signature<input type="text" name="signature"></label>
+        <label>Signature
+          <select name="signature_id">
+            <option value="">— None —</option>
+            <?php foreach ($settingsSignatures as $sig): ?>
+              <option value="<?= (int) $sig['id'] ?>"><?= htmlspecialchars($sig['name']) ?> (<?= strtoupper($sig['format']) ?>)</option>
+            <?php endforeach; ?>
+          </select>
+        </label>
         <div class="set-editactions">
           <button type="submit" class="set-save">Add account</button>
           <button type="button" class="set-cancel" id="set-add-cancel">Cancel</button>
@@ -317,7 +353,54 @@
       </div>
     </div>
 
-    <div class="settings-panel" data-panel="signatures">Signatures — coming soon.</div>
+    <div class="settings-panel" data-panel="signatures">
+      <?php if (empty($settingsSignatures)): ?>
+        <p style="color: var(--text-tertiary);">No signatures yet — create one below and assign it to an account under Accounts &amp; Colours.</p>
+      <?php endif; ?>
+      <?php foreach ($settingsSignatures as $sig): ?>
+        <div class="set-sig-block">
+          <div class="set-sig">
+            <div class="set-sig__info">
+              <strong><?= htmlspecialchars($sig['name']) ?></strong>
+              <span class="set-sig__badge"><?= strtoupper($sig['format']) ?></span>
+            </div>
+            <button type="button" class="set-account__edit" data-edit-toggle>Edit</button>
+            <form method="post" action="/signatures/<?= (int) $sig['id'] ?>/delete" onsubmit="return confirm('Delete this signature?');" style="margin:0;">
+              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+              <button type="submit" class="set-account__remove">Delete</button>
+            </form>
+          </div>
+          <form class="set-account__editform" method="post" action="/signatures/<?= (int) $sig['id'] ?>">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+            <label>Name<input type="text" name="name" value="<?= htmlspecialchars($sig['name']) ?>" required></label>
+            <div class="set-sig-format">
+              <label class="set-sig-radio"><input type="radio" name="format" value="plain"<?= $sig['format'] !== 'html' ? ' checked' : '' ?>> Plain text</label>
+              <label class="set-sig-radio"><input type="radio" name="format" value="html"<?= $sig['format'] === 'html' ? ' checked' : '' ?>> HTML</label>
+            </div>
+            <label>Body<textarea name="body" rows="6" spellcheck="false"><?= htmlspecialchars($sig['body']) ?></textarea></label>
+            <div class="set-editactions">
+              <button type="submit" class="set-save">Save changes</button>
+              <button type="button" class="set-cancel" data-edit-toggle>Cancel</button>
+            </div>
+          </form>
+        </div>
+      <?php endforeach; ?>
+
+      <button type="button" class="set-add-link" id="set-add-sig-toggle">+ New signature</button>
+      <form class="set-account__editform set-addform" id="set-add-sig-form" method="post" action="/signatures">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+        <label>Name<input type="text" name="name" required></label>
+        <div class="set-sig-format">
+          <label class="set-sig-radio"><input type="radio" name="format" value="plain" checked> Plain text</label>
+          <label class="set-sig-radio"><input type="radio" name="format" value="html"> HTML</label>
+        </div>
+        <label>Body<textarea name="body" rows="6" spellcheck="false"></textarea></label>
+        <div class="set-editactions">
+          <button type="submit" class="set-save">Create signature</button>
+          <button type="button" class="set-cancel" id="set-add-sig-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
     <div class="settings-panel" data-panel="general">General — coming soon.</div>
   </div>
 </div>
@@ -331,9 +414,18 @@
     if (openBtn) openBtn.addEventListener('click', function () { overlay.classList.add('is-open'); });
     closeBtn.addEventListener('click', function () { overlay.classList.remove('is-open'); });
 
-    // Reopen on the accounts tab after an add-account round-trip (?settings=accounts).
-    if (new URLSearchParams(location.search).get('settings') === 'accounts') {
+    // Reopen the modal on a given tab after a settings round-trip (?settings=<tab>).
+    var wantTab = new URLSearchParams(location.search).get('settings');
+    if (wantTab) {
       overlay.classList.add('is-open');
+      var tabEl = document.querySelector('.settings-tab[data-tab="' + wantTab + '"]');
+      var panelEl = document.querySelector('.settings-panel[data-panel="' + wantTab + '"]');
+      if (tabEl && panelEl) {
+        document.querySelectorAll('.settings-tab').forEach(function (t) { t.classList.remove('is-active'); });
+        document.querySelectorAll('.settings-panel').forEach(function (p) { p.classList.remove('is-active'); });
+        tabEl.classList.add('is-active');
+        panelEl.classList.add('is-active');
+      }
       history.replaceState(null, '', location.pathname);
     }
     overlay.addEventListener('click', function (e) {
@@ -396,6 +488,8 @@
       btn.addEventListener('click', function () {
         var form = btn.closest('.set-account')
           ? btn.closest('.set-account').nextElementSibling
+          : btn.closest('.set-sig')
+          ? btn.closest('.set-sig').nextElementSibling
           : btn.closest('.set-account__editform');
         if (form) form.classList.toggle('is-open');
       });
@@ -408,6 +502,15 @@
       addToggle.addEventListener('click', function () { addForm.classList.toggle('is-open'); });
       var addCancel = document.getElementById('set-add-cancel');
       if (addCancel) addCancel.addEventListener('click', function () { addForm.classList.remove('is-open'); });
+    }
+
+    // ---- New-signature form toggle ----
+    var addSigToggle = document.getElementById('set-add-sig-toggle');
+    var addSigForm = document.getElementById('set-add-sig-form');
+    if (addSigToggle && addSigForm) {
+      addSigToggle.addEventListener('click', function () { addSigForm.classList.toggle('is-open'); });
+      var addSigCancel = document.getElementById('set-add-sig-cancel');
+      if (addSigCancel) addSigCancel.addEventListener('click', function () { addSigForm.classList.remove('is-open'); });
     }
 
     function recolourAccount(accountId, colour) {

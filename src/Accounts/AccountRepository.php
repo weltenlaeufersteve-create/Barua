@@ -32,7 +32,7 @@ class AccountRepository
         $stmt = $db->prepare(
             'INSERT INTO accounts
                 (label, email, colour, sort_order, imap_host, imap_port, imap_encryption, imap_username, imap_password_enc,
-                 smtp_host, smtp_port, smtp_encryption, smtp_username, smtp_password_enc, signature)
+                 smtp_host, smtp_port, smtp_encryption, smtp_username, smtp_password_enc, signature_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
@@ -50,7 +50,7 @@ class AccountRepository
             $data['smtp_encryption'],
             $data['smtp_username'],
             Crypto::encrypt($data['smtp_password']),
-            $data['signature'] ?? '',
+            self::normaliseSignatureId($data['signature_id'] ?? null),
         ]);
 
         return (int) $db->lastInsertId();
@@ -85,13 +85,13 @@ class AccountRepository
     public static function update(int $id, array $data): void
     {
         $sql = 'UPDATE accounts SET
-                    label = ?, email = ?, signature = ?,
+                    label = ?, email = ?, signature_id = ?,
                     imap_host = ?, imap_port = ?, imap_encryption = ?, imap_username = ?,
                     smtp_host = ?, smtp_port = ?, smtp_encryption = ?, smtp_username = ?';
         $params = [
             $data['label'],
             $data['email'],
-            $data['signature'] ?? '',
+            self::normaliseSignatureId($data['signature_id'] ?? null),
             $data['imap_host'],
             $data['imap_port'],
             $data['imap_encryption'],
@@ -115,6 +115,13 @@ class AccountRepository
         $params[] = $id;
 
         Database::connection()->prepare($sql)->execute($params);
+    }
+
+    /** '' / '0' / null → NULL (no signature); otherwise the positive int id. */
+    private static function normaliseSignatureId($value): ?int
+    {
+        $id = (int) $value;
+        return $id > 0 ? $id : null;
     }
 
     public static function decryptImapPassword(array $account): string

@@ -151,6 +151,7 @@ if ($path === '/compose/send' && $method === 'POST') {
         'bcc'         => $_POST['bcc'] ?? '',
         'subject'     => $_POST['subject'] ?? '',
         'body_plain'  => $_POST['body_plain'] ?? '',
+        'body_html'   => $_POST['body_html'] ?? '',
         'in_reply_to' => $_POST['in_reply_to'] ?? '',
         'references'  => $_POST['references'] ?? '',
     ];
@@ -251,7 +252,7 @@ if ($path === '/accounts' && $method === 'POST') {
     foreach ($required as $field) {
         $data[$field] = trim($_POST[$field] ?? '');
     }
-    $data['signature'] = trim($_POST['signature'] ?? '');
+    $data['signature_id'] = $_POST['signature_id'] ?? null;
 
     $missing = array_filter($required, fn($field) => $data[$field] === '');
     if (!empty($missing)) {
@@ -272,15 +273,56 @@ if (preg_match('#^/accounts/(\d+)$#', $path, $m) && $method === 'POST') {
         echo 'Invalid request.';
         return;
     }
-    $fields = ['label', 'email', 'signature', 'imap_host', 'imap_port', 'imap_encryption',
+    $fields = ['label', 'email', 'imap_host', 'imap_port', 'imap_encryption',
                'imap_username', 'imap_password', 'smtp_host', 'smtp_port', 'smtp_encryption',
                'smtp_username', 'smtp_password'];
     $data = [];
     foreach ($fields as $f) {
         $data[$f] = trim($_POST[$f] ?? '');
     }
+    $data['signature_id'] = $_POST['signature_id'] ?? null;
     AccountRepository::update((int) $m[1], $data);
-    header('Location: /');
+    header('Location: /?settings=accounts');
+    return;
+}
+
+// ---- Signatures CRUD (Settings → Signatures) ----
+if ($path === '/signatures' && $method === 'POST') {
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo 'Invalid request.';
+        return;
+    }
+    $name = trim($_POST['name'] ?? '');
+    if ($name !== '') {
+        \Barua\Mail\SignatureRepository::create($name, $_POST['format'] ?? 'plain', $_POST['body'] ?? '');
+    }
+    header('Location: /?settings=signatures');
+    return;
+}
+
+if (preg_match('#^/signatures/(\d+)$#', $path, $m) && $method === 'POST') {
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo 'Invalid request.';
+        return;
+    }
+    $name = trim($_POST['name'] ?? '');
+    if ($name !== '') {
+        \Barua\Mail\SignatureRepository::update((int) $m[1], $name, $_POST['format'] ?? 'plain', $_POST['body'] ?? '');
+    }
+    header('Location: /?settings=signatures');
+    return;
+}
+
+if (preg_match('#^/signatures/(\d+)/delete$#', $path, $m) && $method === 'POST') {
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo 'Invalid request.';
+        return;
+    }
+    \Barua\Mail\SignatureRepository::delete((int) $m[1]);
+    header('Location: /?settings=signatures');
     return;
 }
 

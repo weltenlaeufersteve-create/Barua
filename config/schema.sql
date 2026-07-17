@@ -15,9 +15,21 @@ CREATE TABLE IF NOT EXISTS accounts (
   smtp_username VARCHAR(255) NOT NULL,
   smtp_password_enc TEXT NOT NULL,
   signature TEXT,
+  signature_id INT NULL,
   is_active TINYINT(1) DEFAULT 1,
   last_synced_at DATETIME NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Reusable signatures, assigned to accounts via accounts.signature_id.
+-- format 'plain' → inserted verbatim into the plain-text body; 'html' → sent as HTML.
+CREATE TABLE IF NOT EXISTS signatures (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  format ENUM('plain','html') NOT NULL DEFAULT 'plain',
+  body MEDIUMTEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS messages (
