@@ -92,6 +92,46 @@ if (preg_match('#^/drafts/(\d+)/delete$#', $path, $m) && $method === 'POST') {
     return;
 }
 
+if ($path === '/api/stream' && $method === 'GET') {
+    header('Content-Type: application/json');
+    require_once __DIR__ . '/../views/helpers.php';
+
+    $view = in_array($_GET['view'] ?? '', ['inbox', 'pinned', 'archive', 'trash', 'newsletters', 'notifications', 'people'], true)
+        ? $_GET['view'] : 'inbox';
+    $accountId = ($_GET['account'] ?? '') !== '' ? (int) $_GET['account'] : null;
+    $after = (int) ($_GET['after'] ?? 0);
+
+    $R = \Barua\Mail\MessageRepository::class;
+    $rows = match ($view) {
+        'pinned'        => $R::pinnedMessages(60, $accountId),
+        'archive'       => $R::roleMessages('archive', 60, $accountId),
+        'trash'         => $R::roleMessages('trash', 60, $accountId),
+        'newsletters'   => $R::groupMessages('newsletter', 60, $accountId),
+        'notifications' => $R::groupMessages('notification', 60, $accountId),
+        'people'        => $R::peopleMessages(60, $accountId),
+        default         => $R::unifiedInbox(60, $accountId),
+    };
+
+    // Only rows newer than the client's cursor (genuinely new messages get higher ids).
+    $newRows = [];
+    foreach ($rows as $row) {
+        if ((int) $row['id'] > $after) {
+            $newRows[] = [
+                'id'   => (int) $row['id'],
+                'html' => renderMailRow($row, false, false),
+                'data' => mailRowData($row),
+            ];
+        }
+    }
+
+    echo json_encode([
+        'ok'     => true,
+        'rows'   => $newRows,                                   // newest first
+        'unread' => \Barua\Mail\MessageRepository::totalUnread(),
+    ]);
+    return;
+}
+
 if ($path === '/compose/send' && $method === 'POST') {
     header('Content-Type: application/json');
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
@@ -182,6 +222,11 @@ if ($path === '/sync' && $method === 'POST') {
         return;
     }
     \Barua\Mail\SyncService::syncAll(50);
+    if (($_POST['ajax'] ?? '') === '1') {
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => true]);
+        return;
+    }
     $return = isset($_POST['return_account']) ? '/?account=' . (int) $_POST['return_account'] : '/';
     header('Location: ' . $return);
     return;

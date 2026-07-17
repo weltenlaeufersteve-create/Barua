@@ -1,6 +1,8 @@
 <?php
 use Barua\Mail\MessageRepository;
 
+require_once __DIR__ . '/helpers.php';
+
 $activeAccountId = $activeAccountId ?? null;
 $view = $view ?? 'inbox';
 $accounts = MessageRepository::accountsWithUnread();
@@ -68,34 +70,6 @@ foreach ($rows as $row) {
 $isDraftView = $view === 'drafts';
 $selected = $isDraftView ? null : ($rows[0] ?? null);
 
-function initial(array $row): string
-{
-    $base = $row['sender_name'] !== '' ? $row['sender_name'] : $row['sender_email'];
-    return mb_strtoupper(mb_substr($base, 0, 1)) ?: '?';
-}
-
-/** Inline stroke SVG icons for the sidebar (currentColor, 16px). */
-function sidebarIcon(string $name): string
-{
-    $paths = [
-        'inbox'         => '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
-        'sent'          => '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
-        'pinned'        => '<line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z"/>',
-        'drafts'        => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
-        'archive'       => '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
-        'spam'          => '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-        'trash'         => '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
-        'people'        => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-        'newsletters'   => '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
-        'notifications' => '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
-        'starred'       => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-        'settings'      => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
-        'logout'        => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
-    ];
-    $inner = $paths[$name] ?? '';
-    return '<svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' . $inner . '</svg>';
-}
-
 // Drafts view: a compact map so a row click can reopen the draft in the composer.
 $jsDrafts = [];
 if ($isDraftView) {
@@ -114,20 +88,7 @@ if ($isDraftView) {
 // Compact JSON map for the reader pane (client-side swap on row click).
 $jsMessages = [];
 foreach ($isDraftView ? [] : $rows as $row) {
-    $body = $row['body_plain'] !== '' ? $row['body_plain'] : trim(strip_tags($row['body_html'] ?? ''));
-    $jsMessages[(int) $row['id']] = [
-        'subject'       => $row['subject'],
-        'sender'        => $row['sender_name'] !== '' ? $row['sender_name'] : $row['sender_email'],
-        'email'         => $row['sender_email'],
-        'accountId'     => (int) $row['account_id'],
-        'accountLabel'  => $row['account_label'],
-        'accountColour' => $row['account_colour'],
-        'messageId'     => $row['message_id'] ?? '',
-        'time'          => MessageRepository::timeLabel($row['date_sent']),
-        'initial'       => initial($row),
-        'hasHtml'       => trim($row['body_html'] ?? '') !== '',
-        'body'          => $body !== '' ? $body : '(No text content)',
-    ];
+    $jsMessages[(int) $row['id']] = mailRowData($row);
 }
 ?>
 <!DOCTYPE html>
@@ -155,7 +116,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
       <div class="mobile-back" data-go="list">‹ Inbox</div>
       <div class="sidebar__title">Barua</div>
 
-      <a href="/" class="sidebar__item<?= $activeAccount === null ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count"><?= $totalUnread ?: '' ?></span></a>
+      <a href="/" class="sidebar__item<?= $activeAccount === null ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count" id="inbox-count"><?= $totalUnread ?: '' ?></span></a>
 
       <div class="sidebar__divider"></div>
 
@@ -198,13 +159,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         </div>
         <div class="mail-list__icons">
           <div class="icon-btn mobile-menu" data-go="sidebar" title="Menu">☰</div>
-          <form method="post" action="/sync" style="margin:0;">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-            <?php if ($activeAccount): ?>
-              <input type="hidden" name="return_account" value="<?= (int) $activeAccount['id'] ?>">
-            <?php endif; ?>
-            <button type="submit" class="icon-btn" title="Sync now" style="border:none;background:transparent;cursor:pointer;">⟳</button>
-          </form>
+          <button type="button" id="sync-now" class="icon-btn" title="Sync now" style="border:none;background:transparent;cursor:pointer;"><svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
           <div class="icon-btn" title="Compose">✎</div>
         </div>
       </div>
@@ -233,34 +188,18 @@ foreach ($isDraftView ? [] : $rows as $row) {
         </div>
       <?php endif; ?>
 
+      <div class="mail-list__scroll" id="mail-list-scroll">
       <?php foreach ($groups as $groupName => $groupRows): ?>
-        <div class="mail-list__date-group"><?= htmlspecialchars($groupName) ?></div>
+        <div class="mail-list__date-group" data-group="<?= htmlspecialchars($groupName) ?>"><?= htmlspecialchars($groupName) ?></div>
         <?php foreach ($groupRows as $row):
-          $isUnread = (int) $row['is_read'] === 0;
           $isSelected = $selected && $row['id'] === $selected['id'];
-        ?>
-          <div class="mail-row<?= $isUnread ? ' is-unread' : '' ?><?= $isSelected ? ' is-selected' : '' ?>" <?= $isDraftView ? 'data-draft="' . (int) $row['id'] . '"' : 'data-msg="' . (int) $row['id'] . '"' ?> data-account="<?= (int) $row['account_id'] ?>">
-            <div class="mail-row__actions">
-              <?php if ($isDraftView): ?>
-                <span class="row-action" title="Delete draft"><?= sidebarIcon('trash') ?></span>
-              <?php else: ?>
-                <span class="row-action row-action--pin<?= (int) $row['is_starred'] === 1 ? ' is-pinned' : '' ?>" title="Pin"><?= sidebarIcon('pinned') ?></span>
-                <span class="row-action" title="Archive"><?= sidebarIcon('archive') ?></span>
-                <span class="row-action" title="Delete"><?= sidebarIcon('trash') ?></span>
-              <?php endif; ?>
-            </div>
-            <span class="mail-row__stripe" style="background: <?= htmlspecialchars($row['account_colour']) ?>"></span>
-            <div class="mail-row__body">
-              <div class="mail-row__top">
-                <span class="mail-row__sender"><?= htmlspecialchars($row['sender_name'] !== '' ? $row['sender_name'] : $row['sender_email']) ?></span>
-                <span class="mail-row__time"><?= htmlspecialchars(MessageRepository::timeLabel($row['date_sent'])) ?></span>
-              </div>
-              <div class="mail-row__subject"><?= htmlspecialchars($row['subject'] !== '' ? $row['subject'] : '(no subject)') ?></div>
-              <div class="mail-row__preview"><?= htmlspecialchars($row['body_snippet'] ?? '') ?></div>
-            </div>
-          </div>
-        <?php endforeach; ?>
+          echo renderMailRow($row, $isDraftView, (bool) $isSelected);
+        endforeach; ?>
       <?php endforeach; ?>
+      </div>
+
+      <!-- Live notification strip (new mail, later other events) -->
+      <div class="list-notify" id="list-notify"></div>
     </div>
 
     <!-- Reader -->
@@ -307,40 +246,6 @@ foreach ($isDraftView ? [] : $rows as $row) {
     var messages = <?= json_encode($jsMessages, JSON_UNESCAPED_UNICODE) ?>;
     var currentMsgId = <?= $selected ? (int) $selected['id'] : 'null' ?>;
 
-    document.querySelectorAll('.mail-row[data-msg]').forEach(function (row) {
-      row.addEventListener('click', function () {
-        document.querySelectorAll('.mail-row').forEach(function (r) { r.classList.remove('is-selected'); });
-        row.classList.add('is-selected');
-        var wasUnread = row.classList.contains('is-unread');
-        row.classList.remove('is-unread');
-
-        var msg = messages[row.dataset.msg];
-        if (!msg) return;
-        currentMsgId = parseInt(row.dataset.msg, 10);
-
-        // Persist read state on the server (\Seen), so it survives sync + reload.
-        if (wasUnread) {
-            var rb = new URLSearchParams();
-            rb.set('csrf_token', mainCsrf);
-            fetch('/messages/' + currentMsgId + '/read', { method: 'POST', body: rb });
-        }
-
-        document.getElementById('reader-subject').textContent = msg.subject || '(no subject)';
-        document.getElementById('reader-body').textContent = msg.body;
-        showReaderBody(msg);
-        var meta = document.getElementById('reader-meta');
-        var avatar = meta.querySelector('.reader__avatar');
-        avatar.style.background = msg.accountColour;
-        avatar.textContent = msg.initial;
-        avatar.setAttribute('data-account', msg.accountId);
-        meta.querySelector('.reader__from-name').textContent = msg.sender;
-        meta.querySelector('.reader__from-email').textContent = msg.email + ' · ' + msg.accountLabel;
-        meta.querySelector('.reader__time').textContent = msg.time;
-
-        document.body.setAttribute('data-mobile-view', 'reader');
-      });
-    });
-
     // Plain text vs sandboxed HTML iframe in the reader.
     function showReaderBody(msg) {
       var plain = document.getElementById('reader-body');
@@ -368,6 +273,8 @@ foreach ($isDraftView ? [] : $rows as $row) {
     // Row actions: pin toggle (IMAP \Flagged), archive, trash — server write + cache + UI.
     var mainCsrf = <?= json_encode($csrfToken) ?>;
     var currentView = <?= json_encode($view) ?>;
+    var currentAccount = <?= $activeAccountId !== null ? (int) $activeAccountId : 'null' ?>;
+    var isDraftView = <?= $isDraftView ? 'true' : 'false' ?>;
 
     function msgAction(id, action, data, cb) {
       var body = new URLSearchParams();
@@ -415,8 +322,43 @@ foreach ($isDraftView ? [] : $rows as $row) {
       });
     });
 
-    document.querySelectorAll('.mail-row[data-msg]').forEach(function (row) {
+    // Wire one message row: reader-open on click + pin/archive/trash actions.
+    // Used for the initial rows AND for rows slid in later by the live stream.
+    function wireMessageRow(row) {
       var id = row.dataset.msg;
+
+      row.addEventListener('click', function () {
+        document.querySelectorAll('.mail-row').forEach(function (r) { r.classList.remove('is-selected'); });
+        row.classList.add('is-selected');
+        var wasUnread = row.classList.contains('is-unread');
+        row.classList.remove('is-unread');
+
+        var msg = messages[id];
+        if (!msg) return;
+        currentMsgId = parseInt(id, 10);
+
+        if (wasUnread) {
+          var rb = new URLSearchParams();
+          rb.set('csrf_token', mainCsrf);
+          fetch('/messages/' + currentMsgId + '/read', { method: 'POST', body: rb });
+          setInboxBadge((parseInt(document.getElementById('inbox-count').textContent, 10) || 1) - 1);
+        }
+
+        document.getElementById('reader-subject').textContent = msg.subject || '(no subject)';
+        document.getElementById('reader-body').textContent = msg.body;
+        showReaderBody(msg);
+        var meta = document.getElementById('reader-meta');
+        var avatar = meta.querySelector('.reader__avatar');
+        avatar.style.background = msg.accountColour;
+        avatar.textContent = msg.initial;
+        avatar.setAttribute('data-account', msg.accountId);
+        meta.querySelector('.reader__from-name').textContent = msg.sender;
+        meta.querySelector('.reader__from-email').textContent = msg.email + ' · ' + msg.accountLabel;
+        meta.querySelector('.reader__time').textContent = msg.time;
+
+        document.body.setAttribute('data-mobile-view', 'reader');
+      });
+
       var pinBtn = row.querySelector('.row-action--pin');
       var archBtn = row.querySelector('.row-action[title="Archive"]');
       var trashBtn = row.querySelector('.row-action[title="Delete"]');
@@ -434,18 +376,21 @@ foreach ($isDraftView ? [] : $rows as $row) {
 
       if (archBtn) archBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        msgAction(id, 'archive', {}, function (res) {
-          if (res.ok) removeRow(row);
-        });
+        msgAction(id, 'archive', {}, function (res) { if (res.ok) removeRow(row); });
       });
 
       if (trashBtn) trashBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        msgAction(id, 'trash', {}, function (res) {
-          if (res.ok) removeRow(row);
-        });
+        msgAction(id, 'trash', {}, function (res) { if (res.ok) removeRow(row); });
       });
-    });
+    }
+
+    document.querySelectorAll('.mail-row[data-msg]').forEach(wireMessageRow);
+
+    function setInboxBadge(n) {
+      var badge = document.getElementById('inbox-count');
+      if (badge) badge.textContent = n > 0 ? n : '';
+    }
 
     // Reader toolbar: archive the currently open message.
     var readerArchive = document.querySelector('.reader__toolbar .pill:not(#reader-reply):not(#reader-forward)');
@@ -496,6 +441,100 @@ foreach ($isDraftView ? [] : $rows as $row) {
         title: 'Forward', fromAccount: msg.accountId, to: '',
         subject: subj, body: quote(msg)
       });
+    });
+
+    // ---- Live stream: poll for new mail, slide it into the list ----
+    var notifyEl = document.getElementById('list-notify');
+    var notifyTimer = null;
+    function baruaNotify(text) {
+      if (!notifyEl) return;
+      notifyEl.textContent = text;
+      notifyEl.classList.add('is-visible');
+      if (notifyTimer) clearTimeout(notifyTimer);
+      notifyTimer = setTimeout(function () { notifyEl.classList.remove('is-visible'); }, 5000);
+    }
+    if (notifyEl) notifyEl.addEventListener('click', function () {
+      var sc = document.getElementById('mail-list-scroll');
+      if (sc) sc.scrollTo({ top: 0, behavior: 'smooth' });
+      notifyEl.classList.remove('is-visible');
+    });
+
+    function streamCursor() {
+      var max = 0;
+      document.querySelectorAll('.mail-row[data-msg]').forEach(function (r) {
+        var id = parseInt(r.dataset.msg, 10);
+        if (id > max) max = id;
+      });
+      return max;
+    }
+
+    function ensureTodayGroup(scroll) {
+      var first = scroll.querySelector('.mail-list__date-group');
+      if (first && first.dataset.group === 'Today') return first;
+      var hdr = document.createElement('div');
+      hdr.className = 'mail-list__date-group';
+      hdr.dataset.group = 'Today';
+      hdr.textContent = 'Today';
+      scroll.insertBefore(hdr, scroll.firstChild);
+      return hdr;
+    }
+
+    function pollStream() {
+      if (isDraftView || document.hidden) return;
+      var url = '/api/stream?view=' + encodeURIComponent(currentView) +
+                '&after=' + streamCursor() +
+                (currentAccount !== null ? '&account=' + currentAccount : '');
+      fetch(url).then(function (r) { return r.json(); }).then(function (res) {
+        if (!res || !res.ok) return;
+        if (typeof res.unread === 'number') setInboxBadge(res.unread);
+        if (!res.rows || !res.rows.length) return;
+
+        var scroll = document.getElementById('mail-list-scroll');
+        if (!scroll) return;
+        var todayHeader = ensureTodayGroup(scroll);
+        var atTop = scroll.scrollTop < 8;
+        var addedHeight = 0;
+
+        // API returns newest-first; insert so newest ends up on top, just under "Today".
+        res.rows.slice().reverse().forEach(function (item) {
+          if (document.querySelector('.mail-row[data-msg="' + item.id + '"]')) return;
+          messages[item.id] = item.data;
+          var tmp = document.createElement('div');
+          tmp.innerHTML = item.html;
+          var row = tmp.firstElementChild;
+          row.classList.add('just-arrived');
+          todayHeader.after(row);
+          wireMessageRow(row);
+          addedHeight += row.offsetHeight;
+        });
+
+        // Don't yank the list while the user is reading further down.
+        if (!atTop) scroll.scrollTop += addedHeight;
+
+        baruaNotify(res.rows.length === 1 ? '1 new message' : res.rows.length + ' new messages');
+      }).catch(function () {});
+    }
+
+    // Manual refresh (⟳): run a real IMAP sync, then reflect new mail live — no page reload.
+    var syncBtn = document.getElementById('sync-now');
+    if (syncBtn) syncBtn.addEventListener('click', function () {
+      if (syncBtn.classList.contains('spinning')) return;
+      syncBtn.classList.add('spinning');
+      var body = new URLSearchParams();
+      body.set('csrf_token', mainCsrf);
+      body.set('ajax', '1');
+      fetch('/sync', { method: 'POST', body: body })
+        .then(function (r) { return r.json().catch(function () { return { ok: true }; }); })
+        .then(function () { pollStream(); })
+        .catch(function () {})
+        .finally(function () { syncBtn.classList.remove('spinning'); });
+    });
+
+    // Gentle background heartbeat (cron only produces mail every ~3 min) + instant catch-up
+    // whenever the tab regains focus. The ⟳ button is the immediate manual path.
+    setInterval(pollStream, 150000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) pollStream();
     });
   </script>
 

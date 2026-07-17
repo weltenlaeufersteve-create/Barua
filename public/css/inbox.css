@@ -106,21 +106,53 @@
   flex-shrink: 0;
   background: var(--list-bg);
   border-right: 1px solid var(--border);
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
+/* Header is a fixed flex item; only the rows scroll below it. */
 .mail-list__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   padding: 18px 20px 12px;
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  flex-shrink: 0;
   background: var(--list-bg);
   border-bottom: 1px solid var(--border);
+}
+
+.mail-list__scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Bottom notification strip — slides up in the theme accent for new mail / events. */
+.list-notify {
+  position: absolute;
+  left: 12px; right: 12px; bottom: 12px;
+  background: var(--accent);
+  color: var(--accent-text);
+  border-radius: var(--radius-md);
+  padding: 11px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transform: translateY(160%);
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+  cursor: pointer;
+  z-index: 8;
+}
+.list-notify.is-visible { transform: translateY(0); }
+
+/* New rows sliding into the list. */
+@keyframes rowSlideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mail-row.just-arrived {
+  animation: rowSlideIn 0.32s ease both;
 }
 
 .mail-list__title { font-size: 19px; font-weight: 700; }
@@ -128,6 +160,13 @@
 
 .mail-list__icons { display: flex; gap: 6px; }
 .icon-btn.mobile-menu { display: none; }
+.sync-icon {
+  width: 18px;
+  height: 18px;
+  transform-origin: 50% 50%; /* clean centred rotation, no wobble */
+}
+@keyframes iconspin { to { transform: rotate(360deg); } }
+.icon-btn.spinning .sync-icon { animation: iconspin 0.7s linear infinite; }
 .icon-btn {
   width: 30px;
   height: 30px;
