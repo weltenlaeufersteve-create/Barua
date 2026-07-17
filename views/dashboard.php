@@ -228,11 +228,13 @@ foreach ($isDraftView ? [] : $rows as $row) {
           echo htmlspecialchars($selBody !== '' ? $selBody : '(No text content)');
         ?></div>
         <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>
-          <div class="reader__floatbar" id="reader-floatbar">
-            <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
-            <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+          <div class="reader__topbar">
+            <div class="reader__imgbar" id="reader-imgbar">Remote images blocked · <span id="load-images">Load images</span></div>
+            <div class="reader__floatbar" id="reader-floatbar">
+              <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
+              <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
           </div>
-          <div class="reader__imgbar" id="reader-imgbar">Remote images blocked · <span id="load-images">Load images</span></div>
           <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
         </div>
       </div>

@@ -363,23 +363,37 @@
   min-height: 380px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   /* Full-bleed: stretch to the reader pane edges (counters .reader__content padding). */
   margin: 20px -32px -28px;
   /* Separator line above the email, matching the toolbar line below it. */
   border-top: 1px solid var(--border);
-  /* Content starts ~15px below the line, leaving room for the floating icons. */
-  padding-top: 15px;
+}
+
+/* Continuous full-width bar under the line: image notice on the left, icons opposite.
+   The email renders below it. Theme background blends with the reader surround. */
+.reader__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 5px 14px 5px 32px; /* left aligns with the content column */
+  background: var(--reader-bg);
 }
 .reader__imgbar {
   font-size: 12px;
   color: var(--text-tertiary);
-  padding: 0 32px; /* text stays aligned with the content column */
 }
 .reader__imgbar span {
   color: var(--accent);
   cursor: pointer;
 }
+.reader__floatbar {
+  display: flex;
+  gap: 2px;
+}
+.reader__floatbar .icon-btn { color: var(--text-secondary); }
+
 .reader__frame {
   flex: 1;
   min-height: 360px;
@@ -388,24 +402,6 @@
   border-radius: 0;
   background: transparent; /* dark mail lets the theme --reader-bg show through */
 }
-
-/* Floating icon row inside the email, top-right, just under the separator line
-   (Outlook-style). Bare icons on the mail background — no pill/border/shadow. */
-.reader__floatbar {
-  position: absolute;
-  top: 6px;
-  right: 14px;
-  z-index: 4;
-  display: flex;
-  gap: 2px;
-  /* Theme background behind the icons: blends into the dark surround, and gives a clean
-     theme-coloured strip over light newsletter content so the icons stay legible. */
-  background: var(--reader-bg);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-}
-.reader__floatbar .icon-btn { color: var(--text-secondary); }
-/* Pure icon at rest; on hover the same box as the header/pen icons (base .icon-btn:hover). */
 
 .reader__toolbar {
   display: flex;
