@@ -144,16 +144,12 @@
 /* Quick filter pills above the list — mobile only (desktop uses the sidebar).
    Touch-friendly, horizontally scrollable if they overflow. */
 .filter-pills {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 14px;
-  overflow-x: auto;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
 }
-.filter-pills::-webkit-scrollbar { display: none; }
 .filter-pill {
   flex-shrink: 0;
   display: inline-flex;
