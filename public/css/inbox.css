@@ -10,10 +10,21 @@
   flex-shrink: 0;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
-  overflow-y: auto;
-  padding: 18px 12px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* Top section scrolls; the footer (Settings / Sign out) stays pinned to the bottom. */
+.sidebar__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 12px 0;
+}
+.sidebar__footer {
+  flex-shrink: 0;
+  padding: 6px 12px 12px;
+  background: var(--sidebar-bg);
 }
 
 .sidebar__title {
@@ -85,6 +96,7 @@
 
 .sidebar__divider {
   height: 1px;
+  flex-shrink: 0;             /* never let the flex column squash the 1px line to nothing */
   background: var(--border);
   /* full-width: cancel the sidebar's 12px horizontal padding so it spans edge to edge */
   margin: 10px -12px;
@@ -218,6 +230,7 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
+  margin-right: -5px; /* halve the 10px gap between the icons and the account stripe */
 }
 .row-action {
   display: flex;

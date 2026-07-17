@@ -113,6 +113,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
   <div class="app">
     <!-- Sidebar -->
     <div class="sidebar">
+      <div class="sidebar__scroll">
       <div class="mobile-back" data-go="list">‹ Inbox</div>
       <div class="sidebar__title">Barua</div>
 
@@ -143,11 +144,13 @@ foreach ($isDraftView ? [] : $rows as $row) {
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'people')) ?>" class="sidebar__item<?= $view === 'people' ? ' is-active' : '' ?>"><?= sidebarIcon('people') ?> People <span class="sidebar__count"><?= MessageRepository::peopleUnread($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'newsletters')) ?>" class="sidebar__item<?= $view === 'newsletters' ? ' is-active' : '' ?>"><?= sidebarIcon('newsletters') ?> Newsletters <span class="sidebar__count"><?= MessageRepository::groupUnread('newsletter', $activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'notifications')) ?>" class="sidebar__item<?= $view === 'notifications' ? ' is-active' : '' ?>"><?= sidebarIcon('notifications') ?> Notifications <span class="sidebar__count"><?= MessageRepository::groupUnread('notification', $activeAccountId) ?: '' ?></span></a>
+      </div>
 
-      <div class="sidebar__spacer"></div>
-      <div class="sidebar__divider"></div>
-      <div class="sidebar__item" id="open-settings"><?= sidebarIcon('settings') ?> Settings</div>
-      <a href="/logout" class="sidebar__item"><?= sidebarIcon('logout') ?> Sign out</a>
+      <div class="sidebar__footer">
+        <div class="sidebar__divider"></div>
+        <div class="sidebar__item" id="open-settings"><?= sidebarIcon('settings') ?> Settings</div>
+        <a href="/logout" class="sidebar__item"><?= sidebarIcon('logout') ?> Sign out</a>
+      </div>
     </div>
 
     <!-- Mail list -->
