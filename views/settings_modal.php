@@ -67,6 +67,16 @@
   }
   .settings-panel.is-active { display: block; }
 
+  /* Panel header: title, underline, short description below. */
+  .set-panel-head { margin-bottom: 20px; }
+  .set-panel-title {
+    font-size: 15px; font-weight: 600; color: var(--text-primary);
+    margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .set-panel-desc {
+    font-size: 12.5px; color: var(--text-tertiary); line-height: 1.5; margin: 0;
+  }
+
   .set-account-block { border-bottom: 1px solid var(--border); }
   .set-account-block:last-child { border-bottom: none; }
   .set-account-block.is-dragging { opacity: 0.45; }
@@ -207,6 +217,10 @@
         $settingsAccounts = \Barua\Accounts\AccountRepository::all();
         $settingsSignatures = \Barua\Mail\SignatureRepository::all();
       ?>
+      <div class="set-panel-head">
+        <h3 class="set-panel-title">Accounts &amp; Colours</h3>
+        <p class="set-panel-desc">Manage your mail accounts, pick an accent colour and signature for each, and drag to reorder how they appear in the sidebar.</p>
+      </div>
       <?php if (empty($settingsAccounts)): ?>
         <p style="color: var(--text-tertiary);">No accounts yet.</p>
       <?php endif; ?>
@@ -339,6 +353,10 @@
     </div>
 
     <div class="settings-panel" data-panel="appearance">
+      <div class="set-panel-head">
+        <h3 class="set-panel-title">Appearance</h3>
+        <p class="set-panel-desc">Choose a light or dark mode and an accent colour. Your choice is saved in this browser and applied instantly.</p>
+      </div>
       <div class="set-subhead">Mode</div>
       <div class="appearance-row" id="appearance-modes">
         <button type="button" class="appearance-opt" data-mode="light">☀&nbsp; Light</button>
@@ -354,6 +372,10 @@
     </div>
 
     <div class="settings-panel" data-panel="signatures">
+      <div class="set-panel-head">
+        <h3 class="set-panel-title">Signatures</h3>
+        <p class="set-panel-desc">Create reusable plain-text or HTML signatures, then assign one to each account under Accounts &amp; Colours. It's added automatically when you compose a new mail.</p>
+      </div>
       <?php if (empty($settingsSignatures)): ?>
         <p style="color: var(--text-tertiary);">No signatures yet — create one below and assign it to an account under Accounts &amp; Colours.</p>
       <?php endif; ?>
@@ -401,7 +423,13 @@
         </div>
       </form>
     </div>
-    <div class="settings-panel" data-panel="general">General — coming soon.</div>
+    <div class="settings-panel" data-panel="general">
+      <div class="set-panel-head">
+        <h3 class="set-panel-title">General</h3>
+        <p class="set-panel-desc">App-wide preferences and account security. More options are on the way.</p>
+      </div>
+      <p style="color: var(--text-tertiary);">Coming soon.</p>
+    </div>
   </div>
 </div>
 
