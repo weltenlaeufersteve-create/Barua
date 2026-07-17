@@ -391,6 +391,7 @@
 .reader__floatbar {
   display: flex;
   gap: 2px;
+  margin-left: auto; /* icons always pinned right, even when the image notice is hidden */
 }
 .reader__floatbar .icon-btn { color: var(--text-secondary); }
 
