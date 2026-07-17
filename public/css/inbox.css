@@ -58,13 +58,6 @@
   color: var(--text-tertiary);
 }
 
-.sidebar__dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
 .sidebar__icon {
   width: 16px;
   height: 16px;
@@ -110,8 +103,6 @@
   padding: 12px 8px 6px;
   text-transform: uppercase;
 }
-
-.sidebar__spacer { flex: 1; }
 
 /* ---------- Mail list ---------- */
 .mail-list-col {

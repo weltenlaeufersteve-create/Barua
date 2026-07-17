@@ -66,20 +66,6 @@ body {
   opacity: 0.9;
 }
 
-/* Account-context buttons: border in the account's colour, no account fill —
-   only a light theme fill. The account colour is applied inline (style="border-color:…"). */
-.btn-account {
-  border: 1.5px solid var(--border);
-  background: var(--hover-bg);
-  color: var(--text-primary);
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 16px;
-}
-.btn-account:hover { background: var(--selected-bg); }
-
 .error {
   color: var(--acc-pink);
   font-size: 13px;
