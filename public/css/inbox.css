@@ -404,8 +404,7 @@
   height: 26px;
   color: var(--text-secondary);
 }
-/* Pure icons like the sidebar — no hover box; only a colour change. */
-.reader__floatbar .icon-btn:hover { background: transparent; color: var(--text-primary); }
+/* Pure icon at rest; on hover the same box as the header/pen icons (base .icon-btn:hover). */
 
 .reader__toolbar {
   display: flex;
