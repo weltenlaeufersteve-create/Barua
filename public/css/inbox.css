@@ -399,10 +399,10 @@
 .reader__floatbar .icon-btn {
   width: 26px;
   height: 26px;
-  border-radius: 50%;
   color: var(--text-secondary);
 }
-.reader__floatbar .icon-btn:hover { color: var(--text-primary); }
+/* Pure icons like the sidebar — no hover box; only a colour change. */
+.reader__floatbar .icon-btn:hover { background: transparent; color: var(--text-primary); }
 
 .reader__toolbar {
   display: flex;
