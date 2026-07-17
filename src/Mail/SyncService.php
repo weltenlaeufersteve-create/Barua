@@ -306,7 +306,7 @@ class SyncService
 
         $plain = self::bodyText($message, false);
         $html  = self::bodyText($message, true);
-        $snippet = mb_substr(trim(preg_replace('/\s+/', ' ', $plain !== '' ? $plain : strip_tags($html))), 0, 300);
+        $snippet = mb_substr($plain !== '' ? trim(preg_replace('/\s+/', ' ', $plain)) : HtmlMailRenderer::toText($html), 0, 300);
 
         $isRead = 0;
         try {

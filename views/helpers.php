@@ -83,7 +83,7 @@ function renderMailRow(array $row, bool $isDraftView = false, bool $isSelected =
 /** The JS reader-map entry for a message row. */
 function mailRowData(array $row): array
 {
-    $body = ($row['body_plain'] ?? '') !== '' ? $row['body_plain'] : trim(strip_tags($row['body_html'] ?? ''));
+    $body = ($row['body_plain'] ?? '') !== '' ? $row['body_plain'] : \Barua\Mail\HtmlMailRenderer::toText($row['body_html'] ?? '');
     return [
         'subject'       => $row['subject'],
         'sender'        => ($row['sender_name'] ?? '') !== '' ? $row['sender_name'] : $row['sender_email'],

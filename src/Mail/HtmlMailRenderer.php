@@ -51,6 +51,19 @@ class HtmlMailRenderer
             . '</head><body>' . self::sanitize($html) . '</body></html>';
     }
 
+    /**
+     * Flatten HTML to a plain-text snippet/AltBody. Crucially removes elements whose
+     * *content* is not display text (style/script/head) BEFORE strip_tags — otherwise
+     * their CSS/JS leaks into the text (e.g. a newsletter preview showing "body{margin:0}").
+     */
+    public static function toText(string $html): string
+    {
+        $html = preg_replace('#<(style|script|head|title)\b[^>]*>.*?</\1>#is', ' ', $html);
+        $html = preg_replace('#<!--.*?-->#s', ' ', $html);
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return trim(preg_replace('/[\s\x{00a0}]+/u', ' ', $text) ?? '');
+    }
+
     /** Belt-and-braces markup scrub — the sandbox + CSP are the primary defences. */
     public static function sanitize(string $html): string
     {

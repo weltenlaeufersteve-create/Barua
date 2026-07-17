@@ -240,7 +240,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         </div>
         <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
         <div class="reader__body" id="reader-body"<?= $selHasHtml ? ' style="display:none"' : '' ?>><?php
-          $selBody = $selected['body_plain'] !== '' ? $selected['body_plain'] : trim(strip_tags($selected['body_html'] ?? ''));
+          $selBody = $selected['body_plain'] !== '' ? $selected['body_plain'] : \Barua\Mail\HtmlMailRenderer::toText($selected['body_html'] ?? '');
           echo htmlspecialchars($selBody !== '' ? $selBody : '(No text content)');
         ?></div>
         <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>

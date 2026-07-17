@@ -62,7 +62,7 @@ class MailSender
             if ($html !== '') {
                 $mailer->isHTML(true);
                 $mailer->Body = $html;
-                $mailer->AltBody = $plain !== '' ? $plain : strip_tags($html);
+                $mailer->AltBody = $plain !== '' ? $plain : HtmlMailRenderer::toText($html);
             } else {
                 $mailer->isHTML(false);
                 $mailer->Body = $plain;
