@@ -31,6 +31,24 @@ function initial(array $row): string
     return mb_strtoupper(mb_substr($base, 0, 1)) ?: '?';
 }
 
+/**
+ * Row-action icons drawn as CLOSED silhouettes, so CSS can toggle them between
+ * outline (fill:none) and filled (fill:currentColor). No inline fill — the .ra-icon
+ * CSS controls it per state (idle = outline, hover / pinned = filled).
+ */
+function rowActionIcon(string $name): string
+{
+    static $paths = [
+        // vertical thumbtack silhouette
+        'pin'     => '<path d="M9 3h6l-1 6 3 3v2h-4v5l-1 1-1-1v-5H6v-2l3-3-1-6z"/>',
+        // archive box: lid bar + body + slot (slot carved via evenodd)
+        'archive' => '<path fill-rule="evenodd" d="M3.5 4h17v3.6h-17z M5.3 8.4h13.4l-1 11.6H6.3z M9.4 11.5h5.2v1.7H9.4z"/>',
+        // trash can: handle + lid bar + body
+        'trash'   => '<path fill-rule="evenodd" d="M9.4 3h5.2v1.6H9.4z M4 5.2h16v2.2H4z M6.4 8.2h11.2l-1 11.8H7.4z"/>',
+    ];
+    return '<svg class="ra-icon" viewBox="0 0 24 24">' . ($paths[$name] ?? '') . '</svg>';
+}
+
 /** One message-list row, identical markup for full render and live insert. */
 function renderMailRow(array $row, bool $isDraftView = false, bool $isSelected = false): string
 {
@@ -44,10 +62,10 @@ function renderMailRow(array $row, bool $isDraftView = false, bool $isSelected =
     $idAttr = $isDraftView ? 'data-draft="' . $id . '"' : 'data-msg="' . $id . '"';
 
     $actions = $isDraftView
-        ? '<span class="row-action" title="Delete draft">' . sidebarIcon('trash') . '</span>'
-        : '<span class="row-action row-action--pin' . ((int) ($row['is_starred'] ?? 0) === 1 ? ' is-pinned' : '') . '" title="Pin">' . sidebarIcon('pinned') . '</span>'
-          . '<span class="row-action" title="Archive">' . sidebarIcon('archive') . '</span>'
-          . '<span class="row-action" title="Delete">' . sidebarIcon('trash') . '</span>';
+        ? '<span class="row-action" title="Delete draft">' . rowActionIcon('trash') . '</span>'
+        : '<span class="row-action row-action--pin' . ((int) ($row['is_starred'] ?? 0) === 1 ? ' is-pinned' : '') . '" title="Pin">' . rowActionIcon('pin') . '</span>'
+          . '<span class="row-action" title="Archive">' . rowActionIcon('archive') . '</span>'
+          . '<span class="row-action" title="Delete">' . rowActionIcon('trash') . '</span>';
 
     return '<div class="' . $cls . '" ' . $idAttr . ' data-account="' . (int) $row['account_id'] . '">'
         . '<div class="mail-row__actions">' . $actions . '</div>'

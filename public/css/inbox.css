@@ -227,10 +227,26 @@
   transition: opacity 0.12s ease, color 0.12s ease;
   cursor: pointer;
 }
-.row-action .sidebar__icon { width: 14px; height: 14px; color: inherit; }
+.row-action .ra-icon {
+  width: 15px; height: 15px;
+  fill: none;                 /* outline by default */
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: fill 0.12s ease;
+}
 .mail-row:hover .row-action { opacity: 1; }
 .row-action:hover { color: var(--text-primary); }
+
+/* Filled = the result of clicking (hover previews it). */
+.row-action:hover .ra-icon { fill: currentColor; }
+
+/* A pinned mail: pin stays visible + filled in the accent colour. */
 .row-action--pin.is-pinned { opacity: 1; color: var(--accent); }
+.row-action--pin.is-pinned .ra-icon { fill: currentColor; }
+/* Hovering an active pin lifts the fill off — a preview of un-pinning. */
+.row-action--pin.is-pinned:hover .ra-icon { fill: none; }
 
 .mail-row__body { min-width: 0; flex: 1; }
 
