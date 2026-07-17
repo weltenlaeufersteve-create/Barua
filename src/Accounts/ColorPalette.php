@@ -6,15 +6,15 @@ class ColorPalette
 {
     /**
      * Fixed 20-colour palette (5x4), assigned automatically per account.
-     * Generated in oklch with CONSTANT lightness (L=0.68) and chroma (C=0.107) —
-     * only the hue walks the full circle in 18° steps, rainbow-sorted. No pure
-     * colours, uniform signal strength, no two entries too close.
+     * Generated in oklch, constant lightness L=0.66, hue walking the full circle in
+     * 18° steps (rainbow-sorted). Chroma targets 0.145 (clamped to the sRGB gamut per
+     * hue) — vivid "signal" colours, no pure/neon extremes, no two entries too close.
      */
     private const COLOURS = [
-        '#D27C83', '#D27F6D', '#CD8459', '#C38C4A', '#B59443', // red → gold
-        '#A29C47', '#8CA356', '#73A96A', '#57AC80', '#3CAE97', // olive → green-teal
-        '#2AADAD', '#30A9BF', '#47A4CE', '#619DD7', '#7B96DB', // teal → blue
-        '#918FD8', '#A688CF', '#B682C0', '#C47EAE', '#CD7C99', // violet → rose
+        '#DC6875', '#DC6C55', '#D67433', '#C97F08', '#B58C08', // red → gold
+        '#9F9609', '#82A029', '#5BA74F', '#1DAC71', '#0CAA91', // olive → green-teal
+        '#0CA7A7', '#0BA4BC', '#0B9FD3', '#3F97E6', '#6A8DEB', // teal → blue
+        '#8A83E7', '#A47ADA', '#BA72C8', '#CA6CAF', '#D66893', // violet → rose
     ];
 
     /** The full 20-colour palette (for the settings swatch picker). */
