@@ -168,6 +168,22 @@ foreach ($isDraftView ? [] : $rows as $row) {
         </div>
       </div>
 
+      <?php
+        // Quick filter pills (mobile only) — filter without opening the sidebar.
+        $filterPills = [
+            ['inbox',        'inbox',        'Inbox'],
+            ['pinned',       'pinned',       'Pinned'],
+            ['people',       'people',       'People'],
+            ['newsletters',  'newsletters',  'Newsletters'],
+            ['notifications','notifications','Notifications'],
+        ];
+      ?>
+      <div class="filter-pills">
+        <?php foreach ($filterPills as [$pv, $picon, $plabel]): ?>
+          <a href="<?= htmlspecialchars($buildUrl($activeAccountId, $pv)) ?>" class="filter-pill<?= $view === $pv ? ' is-active' : '' ?>"><?= sidebarIcon($picon) ?> <?= $plabel ?></a>
+        <?php endforeach; ?>
+      </div>
+
       <?php if (empty($rows)): ?>
         <div style="padding: 24px 20px; color: var(--text-tertiary); font-size: 13.5px;">
           <?php if ($view === 'sent'): ?>

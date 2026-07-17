@@ -141,6 +141,42 @@
   overflow-y: auto;
 }
 
+/* Quick filter pills above the list — mobile only (desktop uses the sidebar).
+   Touch-friendly, horizontally scrollable if they overflow. */
+.filter-pills {
+  display: none;
+  gap: 8px;
+  padding: 10px 14px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.filter-pills::-webkit-scrollbar { display: none; }
+.filter-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--hover-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.filter-pill .sidebar__icon { width: 15px; height: 15px; color: inherit; }
+.filter-pill.is-active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+@media (max-width: 900px) {
+  .filter-pills { display: flex; }
+}
+
 /* Bottom notification strip — slides up in the theme accent for new mail / events. */
 .list-notify {
   position: absolute;
