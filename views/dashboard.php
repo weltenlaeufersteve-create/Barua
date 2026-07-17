@@ -158,9 +158,9 @@ foreach ($isDraftView ? [] : $rows as $row) {
           <span class="mail-list__subtitle"><?= htmlspecialchars($listSubtitle) ?></span>
         </div>
         <div class="mail-list__icons">
-          <div class="icon-btn mobile-menu" data-go="sidebar" title="Menu">☰</div>
+          <div class="icon-btn mobile-menu" data-go="sidebar" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
           <button type="button" id="sync-now" class="icon-btn" title="Sync now" style="border:none;background:transparent;cursor:pointer;"><svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
-          <div class="icon-btn" title="Compose">✎</div>
+          <div class="icon-btn" title="Compose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
         </div>
       </div>
 

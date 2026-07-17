@@ -160,11 +160,9 @@
 
 .mail-list__icons { display: flex; gap: 6px; }
 .icon-btn.mobile-menu { display: none; }
-.sync-icon {
-  width: 18px;
-  height: 18px;
-  transform-origin: 50% 50%; /* clean centred rotation, no wobble */
-}
+/* Uniform icon size everywhere — same 16px as the sidebar icons. */
+.icon-btn svg { width: 16px; height: 16px; }
+.sync-icon { transform-origin: 50% 50%; /* clean centred rotation, no wobble */ }
 @keyframes iconspin { to { transform: rotate(360deg); } }
 .icon-btn.spinning .sync-icon { animation: iconspin 0.7s linear infinite; }
 .icon-btn {
