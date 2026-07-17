@@ -125,7 +125,10 @@
   .set-add-link {
     display: inline-block; margin-top: 18px; font-size: 13px; color: var(--accent);
     text-decoration: none;
+    background: none; border: none; padding: 0; cursor: pointer; font: inherit;
   }
+  .set-addform { display: none; margin-top: 12px; }
+  .set-addform.is-open { display: block; }
 
   .set-account__editform { display: none; padding: 4px 0 16px; }
   .set-account__editform.is-open { display: block; }
@@ -256,7 +259,47 @@
         </div>
       <?php endforeach; ?>
       </div>
-      <a href="/accounts" class="set-add-link">+ Add account</a>
+      <button type="button" class="set-add-link" id="set-add-toggle">+ Add account</button>
+      <form class="set-account__editform set-addform" id="set-addform" method="post" action="/accounts">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+        <div class="set-grid">
+          <label>Label<input type="text" name="label" required></label>
+          <label>Email<input type="email" name="email" required></label>
+        </div>
+        <div class="set-subhead">IMAP (incoming)</div>
+        <div class="set-grid">
+          <label>Host<input type="text" name="imap_host" required></label>
+          <label>Port<input type="number" name="imap_port" value="993" required></label>
+          <label>Encryption
+            <select name="imap_encryption">
+              <?php foreach (['ssl','tls','none'] as $enc): ?>
+                <option value="<?= $enc ?>"><?= strtoupper($enc) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </label>
+          <label>Username<input type="text" name="imap_username" required></label>
+          <label>Password<input type="password" name="imap_password" required></label>
+        </div>
+        <div class="set-subhead">SMTP (outgoing)</div>
+        <div class="set-grid">
+          <label>Host<input type="text" name="smtp_host" required></label>
+          <label>Port<input type="number" name="smtp_port" value="587" required></label>
+          <label>Encryption
+            <select name="smtp_encryption">
+              <?php foreach (['tls','ssl','none'] as $enc): ?>
+                <option value="<?= $enc ?>"><?= strtoupper($enc) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </label>
+          <label>Username<input type="text" name="smtp_username" required></label>
+          <label>Password<input type="password" name="smtp_password" required></label>
+        </div>
+        <label>Signature<input type="text" name="signature"></label>
+        <div class="set-editactions">
+          <button type="submit" class="set-save">Add account</button>
+          <button type="button" class="set-cancel" id="set-add-cancel">Cancel</button>
+        </div>
+      </form>
     </div>
 
     <div class="settings-panel" data-panel="appearance">
@@ -287,6 +330,12 @@
 
     if (openBtn) openBtn.addEventListener('click', function () { overlay.classList.add('is-open'); });
     closeBtn.addEventListener('click', function () { overlay.classList.remove('is-open'); });
+
+    // Reopen on the accounts tab after an add-account round-trip (?settings=accounts).
+    if (new URLSearchParams(location.search).get('settings') === 'accounts') {
+      overlay.classList.add('is-open');
+      history.replaceState(null, '', location.pathname);
+    }
     overlay.addEventListener('click', function (e) {
       if (e.target === overlay) overlay.classList.remove('is-open');
     });
@@ -351,6 +400,15 @@
         if (form) form.classList.toggle('is-open');
       });
     });
+
+    // ---- Add-account form toggle (in-modal, consistent with edit forms) ----
+    var addToggle = document.getElementById('set-add-toggle');
+    var addForm = document.getElementById('set-addform');
+    if (addToggle && addForm) {
+      addToggle.addEventListener('click', function () { addForm.classList.toggle('is-open'); });
+      var addCancel = document.getElementById('set-add-cancel');
+      if (addCancel) addCancel.addEventListener('click', function () { addForm.classList.remove('is-open'); });
+    }
 
     function recolourAccount(accountId, colour) {
       var side = document.querySelector('.sidebar__item[data-account="' + accountId + '"] .account-avatar');

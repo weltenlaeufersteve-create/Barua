@@ -233,14 +233,6 @@ if ($path === '/sync' && $method === 'POST') {
     return;
 }
 
-if ($path === '/accounts' && $method === 'GET') {
-    $accounts = AccountRepository::all();
-    $csrfToken = Auth::csrfToken();
-    $error = null;
-    require __DIR__ . '/../views/accounts.php';
-    return;
-}
-
 if ($path === '/accounts' && $method === 'POST') {
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
         http_response_code(403);
@@ -258,15 +250,14 @@ if ($path === '/accounts' && $method === 'POST') {
 
     $missing = array_filter($required, fn($field) => $data[$field] === '');
     if (!empty($missing)) {
-        $accounts = AccountRepository::all();
-        $csrfToken = Auth::csrfToken();
-        $error = 'Please fill in all required fields.';
-        require __DIR__ . '/../views/accounts.php';
+        // The in-modal form marks every field required client-side; a server-side
+        // miss means a bypassed form — just bounce back to the app.
+        header('Location: /?settings=accounts');
         return;
     }
 
     AccountRepository::create($data);
-    header('Location: /accounts');
+    header('Location: /?settings=accounts');
     return;
 }
 
