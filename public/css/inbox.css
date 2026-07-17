@@ -361,10 +361,12 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* Full-bleed: stretch to the reader pane edges (counters .reader__content padding),
-     keeping the mail box rectangular — no rounding, clean separation.
-     Generous top gap: reserved space for a future icon bar (print, PDF, light/dark…). */
-  margin: 28px -32px -28px;
+  /* Full-bleed: stretch to the reader pane edges (counters .reader__content padding). */
+  margin: 20px -32px -28px;
+  /* Separator line above the email, matching the toolbar line below it. */
+  border-top: 1px solid var(--border);
+  /* Content starts ~15px below the line, leaving room for the floating icons. */
+  padding-top: 15px;
 }
 .reader__imgbar {
   font-size: 12px;
@@ -384,27 +386,23 @@
   background: transparent; /* dark mail lets the theme --reader-bg show through */
 }
 
-/* Floating icon row inside the email, top-right (Outlook-style). */
+/* Floating icon row inside the email, top-right, just under the separator line
+   (Outlook-style). Bare icons on the mail background — no pill/border/shadow. */
 .reader__floatbar {
   position: absolute;
-  top: 12px;
+  top: 4px;
   right: 14px;
   z-index: 4;
   display: flex;
   gap: 2px;
-  padding: 3px;
-  background: var(--sidebar-bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
 }
 .reader__floatbar .icon-btn {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   color: var(--text-secondary);
 }
-.reader__floatbar .icon-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
+.reader__floatbar .icon-btn:hover { color: var(--text-primary); }
 
 .reader__toolbar {
   display: flex;
