@@ -176,6 +176,7 @@ if ($path === '/compose/send' && $method === 'POST') {
 }
 
 if (preg_match('#^/messages/(\d+)/html$#', $path, $m) && $method === 'GET') {
+    session_write_close(); // read-only render; don't hold the session lock
     $msg = \Barua\Mail\MessageRepository::find((int) $m[1]);
     if (!$msg) {
         http_response_code(404);
@@ -202,6 +203,10 @@ if (preg_match('#^/messages/(\d+)/(pin|archive|trash|read)$#', $path, $m) && $me
         echo json_encode(['ok' => false, 'error' => 'Invalid request']);
         return;
     }
+    // Release the session lock before the (slow) IMAP round-trip so a parallel
+    // request from the same tab — e.g. the reader's /html fetch — isn't serialized
+    // behind it. Nothing below writes to the session.
+    session_write_close();
     $id = (int) $m[1];
     $result = match ($m[2]) {
         'pin'     => \Barua\Mail\MessageActions::setPin($id, ($_POST['pinned'] ?? '') === '1'),
