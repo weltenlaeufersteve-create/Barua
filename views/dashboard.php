@@ -270,6 +270,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
   <script>
     var messages = <?= json_encode($jsMessages, JSON_UNESCAPED_UNICODE) ?>;
     var currentMsgId = <?= $selected ? (int) $selected['id'] : 'null' ?>;
+    var readTimer = null; // Outlook-style: mark read only after dwelling on a mail
 
     // HTML mail rendering: follows the current theme (dark mail on dark themes),
     // remote images blocked by default, toggleable via the floating icon row.
@@ -402,17 +403,26 @@ foreach ($isDraftView ? [] : $rows as $row) {
         document.querySelectorAll('.mail-row').forEach(function (r) { r.classList.remove('is-selected'); });
         row.classList.add('is-selected');
         var wasUnread = row.classList.contains('is-unread');
-        row.classList.remove('is-unread');
 
         var msg = messages[id];
         if (!msg) return;
         currentMsgId = parseInt(id, 10);
 
+        // Mark read only after dwelling ~3s (like Outlook): a quick glance that
+        // moves on before the timer fires leaves the mail unread and skips the
+        // IMAP \Seen write entirely. Switching mails cancels a pending timer.
+        if (readTimer) { clearTimeout(readTimer); readTimer = null; }
         if (wasUnread) {
-          var rb = new URLSearchParams();
-          rb.set('csrf_token', mainCsrf);
-          fetch('/messages/' + currentMsgId + '/read', { method: 'POST', body: rb });
-          setInboxBadge((parseInt(document.getElementById('inbox-count').textContent, 10) || 1) - 1);
+          var targetId = currentMsgId;
+          readTimer = setTimeout(function () {
+            readTimer = null;
+            if (currentMsgId !== targetId) return; // navigated away
+            row.classList.remove('is-unread');
+            var rb = new URLSearchParams();
+            rb.set('csrf_token', mainCsrf);
+            fetch('/messages/' + targetId + '/read', { method: 'POST', body: rb });
+            setInboxBadge((parseInt(document.getElementById('inbox-count').textContent, 10) || 1) - 1);
+          }, 3000);
         }
 
         document.getElementById('reader-subject').textContent = msg.subject || '(no subject)';
