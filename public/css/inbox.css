@@ -86,7 +86,8 @@
 .sidebar__divider {
   height: 1px;
   background: var(--border);
-  margin: 10px 4px;
+  /* full-width: cancel the sidebar's 12px horizontal padding so it spans edge to edge */
+  margin: 10px -12px;
 }
 
 .sidebar__section-header {

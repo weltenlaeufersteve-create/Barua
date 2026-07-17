@@ -118,7 +118,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
 
       <a href="/" class="sidebar__item<?= $activeAccount === null ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count" id="inbox-count"><?= $totalUnread ?: '' ?></span></a>
 
-      <div class="sidebar__divider"></div>
+      <div class="sidebar__section-header">Accounts</div>
 
       <?php foreach ($accounts as $acc): ?>
         <a href="<?= htmlspecialchars($buildUrl((int) $acc['id'], $view)) ?>" data-account="<?= (int) $acc['id'] ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
@@ -130,7 +130,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         </a>
       <?php endforeach; ?>
 
-      <div class="sidebar__divider"></div>
+      <div class="sidebar__section-header">Filter</div>
 
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count" id="pinned-count"><?= $pinnedCount ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'drafts')) ?>" class="sidebar__item<?= $view === 'drafts' ? ' is-active' : '' ?>"><?= sidebarIcon('drafts') ?> Drafts <span class="sidebar__count" id="drafts-count"><?= \Barua\Mail\DraftRepository::count($activeAccountId) ?: '' ?></span></a>
