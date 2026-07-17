@@ -194,6 +194,7 @@
 .mail-list__title { font-size: 19px; font-weight: 700; }
 .mail-list__subtitle { font-size: 12.5px; color: var(--text-tertiary); margin-left: 8px; }
 
+.mail-list__heading { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .mail-list__icons { display: flex; gap: 6px; }
 .icon-btn.mobile-menu { display: none; }
 /* Uniform icon size everywhere — same 16px as the sidebar icons. */
