@@ -2,8 +2,10 @@
 /config/config.php
 /storage/attachments/*
 /storage/drafts/*
+/storage/logs/*
 !/storage/attachments/.gitkeep
 !/storage/drafts/.gitkeep
+!/storage/logs/.gitkeep
 id_rsa
 id_rsa.pub
 id_ed25519
