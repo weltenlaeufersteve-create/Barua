@@ -446,17 +446,30 @@ foreach ($isDraftView ? [] : $rows as $row) {
     // ---- Live stream: poll for new mail, slide it into the list ----
     var notifyEl = document.getElementById('list-notify');
     var notifyTimer = null;
-    function baruaNotify(text) {
+    var notifyCount = 0;
+    function hideNotify() {
+      if (notifyEl) notifyEl.classList.remove('is-visible');
+      notifyCount = 0;
+    }
+    // Announce N new messages; accumulate if already showing. Stays until the user
+    // "sees" it (scrolls the list to top or clicks it), with a generous fallback.
+    function baruaNotify(n) {
       if (!notifyEl) return;
-      notifyEl.textContent = text;
+      if (!notifyEl.classList.contains('is-visible')) notifyCount = 0;
+      notifyCount += n;
+      notifyEl.textContent = notifyCount === 1 ? '1 new message ↑' : notifyCount + ' new messages ↑';
       notifyEl.classList.add('is-visible');
       if (notifyTimer) clearTimeout(notifyTimer);
-      notifyTimer = setTimeout(function () { notifyEl.classList.remove('is-visible'); }, 5000);
+      notifyTimer = setTimeout(hideNotify, 12000);
     }
     if (notifyEl) notifyEl.addEventListener('click', function () {
       var sc = document.getElementById('mail-list-scroll');
       if (sc) sc.scrollTo({ top: 0, behavior: 'smooth' });
-      notifyEl.classList.remove('is-visible');
+      hideNotify();
+    });
+    var listScrollEl = document.getElementById('mail-list-scroll');
+    if (listScrollEl) listScrollEl.addEventListener('scroll', function () {
+      if (listScrollEl.scrollTop < 8) hideNotify();
     });
 
     function streamCursor() {
@@ -511,7 +524,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         // Don't yank the list while the user is reading further down.
         if (!atTop) scroll.scrollTop += addedHeight;
 
-        baruaNotify(res.rows.length === 1 ? '1 new message' : res.rows.length + ' new messages');
+        baruaNotify(res.rows.length);
       }).catch(function () {});
     }
 
