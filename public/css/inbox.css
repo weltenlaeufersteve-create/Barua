@@ -381,8 +381,15 @@
   line-height: 1.7;
   color: var(--text-primary);
   white-space: pre-wrap;
-  margin-top: 28px; /* same breathing room as the HTML box (future icon bar) */
+  /* Full-bleed surface like the HTML mail box, so the light/dark toggle covers the
+     whole pane instead of tinting a floating column of text. */
+  flex: 1;
+  margin: 0 -32px -28px;
+  padding: 24px 32px;
 }
+/* Per-mail light/dark, driven by the reader's toggle — works for plain text too. */
+.reader__body.is-mail-light { background: var(--mail-light-bg); color: var(--mail-light-fg); }
+.reader__body.is-mail-dark  { background: var(--mail-dark-bg);  color: var(--mail-dark-fg); }
 
 /* HTML mail: sandboxed iframe fills the remaining reader height. */
 .reader__content { display: flex; flex-direction: column; }

@@ -184,3 +184,34 @@
   --accent:         oklch(0.55 0.12 245);
   --accent-text:    oklch(0.99 0 0);
 }
+
+/* ---------- Per-mail light/dark surfaces ----------
+   The reader's light/dark toggle works on every mail, HTML or plain text. A mail can
+   therefore be shown dark while the app runs a light theme (and vice versa), so both
+   surfaces must exist in every theme. Each tint defines the pair once, taken from its
+   own dark and light variants — so "dark" is always the darkest colour of that family,
+   never a hard black. */
+[data-theme="dark-neutral"], [data-theme="light-neutral"] {
+  --mail-dark-bg:  oklch(0.155 0.004 260);
+  --mail-dark-fg:  oklch(0.93 0.004 260);
+  --mail-light-bg: oklch(0.99 0.002 260);
+  --mail-light-fg: oklch(0.22 0.005 260);
+}
+[data-theme="dark-sand"], [data-theme="light-sand"] {
+  --mail-dark-bg:  oklch(0.16 0.013 80);
+  --mail-dark-fg:  oklch(0.92 0.014 85);
+  --mail-light-bg: oklch(0.955 0.015 82);
+  --mail-light-fg: oklch(0.32 0.03 70);
+}
+[data-theme="dark-aubergine"], [data-theme="light-aubergine"] {
+  --mail-dark-bg:  oklch(0.175 0.03 340);
+  --mail-dark-fg:  oklch(0.92 0.025 330);
+  --mail-light-bg: oklch(0.985 0.008 340);
+  --mail-light-fg: oklch(0.28 0.03 340);
+}
+[data-theme="dark-steel"], [data-theme="light-steel"] {
+  --mail-dark-bg:  oklch(0.24 0.017 245);
+  --mail-dark-fg:  oklch(0.93 0.012 245);
+  --mail-light-bg: oklch(0.985 0.006 245);
+  --mail-light-fg: oklch(0.26 0.024 245);
+}

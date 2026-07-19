@@ -251,12 +251,12 @@ foreach ($isDraftView ? [] : $rows as $row) {
         </div>
         <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
         <!-- Action bar sits above the mail body and is ALWAYS visible — plain-text mail
-             gets the same print / ⋮ actions as HTML mail. Only the pieces that are
-             HTML-specific (remote-image notice, light/dark toggle) hide themselves. -->
+             gets the same print / light-dark / ⋮ actions as HTML mail. Only the
+             remote-image notice is HTML-specific and hides itself. -->
         <div class="reader__topbar">
           <div class="reader__imgbar" id="reader-imgbar"<?= $selHasHtml ? '' : ' style="display:none"' ?>>Remote images blocked · <span id="load-images">Load images</span></div>
           <div class="reader__floatbar" id="reader-floatbar">
-            <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"<?= $selHasHtml ? '' : ' style="display:none"' ?>></button>
+            <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
             <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
             <div class="reader__more">
               <button type="button" class="icon-btn" id="reader-more" title="More actions"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
@@ -299,6 +299,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
     var themeMode = (localStorage.getItem('barua_theme') || 'dark-neutral').split('-')[0];
     var readerImages = false;
     var readerDark = themeMode === 'dark';
+    var currentHasHtml = <?= $selected && trim($selected['body_html'] ?? '') !== '' ? 'true' : 'false' ?>;
 
     var SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
     var MOON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
@@ -318,27 +319,32 @@ foreach ($isDraftView ? [] : $rows as $row) {
       if (btn) btn.innerHTML = readerDark ? SUN_SVG : MOON_SVG; // shows what you'll switch TO
     }
 
+    // Apply the current light/dark choice to whichever body is showing: HTML mail is
+    // re-rendered in the iframe, plain text swaps its own surface colours. Keeps the
+    // toggle meaningful — and therefore always visible — for every mail.
+    function applyReaderMode() {
+      updateThemeToggleIcon();
+      var plain = document.getElementById('reader-body');
+      if (plain) {
+        plain.classList.toggle('is-mail-dark', readerDark);
+        plain.classList.toggle('is-mail-light', !readerDark);
+      }
+      if (currentHasHtml) loadReaderFrame();
+    }
+
     function showReaderBody(msg) {
       var plain = document.getElementById('reader-body');
       var wrap = document.getElementById('reader-html');
       var imgbar = document.getElementById('reader-imgbar');
-      var themeBtn = document.getElementById('reader-theme');
       if (!wrap) return;
-      // The action bar itself stays visible either way; only the HTML-specific
-      // controls (remote-image notice, light/dark toggle) follow the body type.
-      if (imgbar) imgbar.style.display = msg.hasHtml ? '' : 'none';
-      if (themeBtn) themeBtn.style.display = msg.hasHtml ? '' : 'none';
-      if (msg.hasHtml) {
-        plain.style.display = 'none';
-        wrap.style.display = '';
-        readerImages = false;            // reset per message
-        readerDark = themeMode === 'dark';
-        updateThemeToggleIcon();
-        loadReaderFrame();
-      } else {
-        plain.style.display = '';
-        wrap.style.display = 'none';
-      }
+      currentHasHtml = !!msg.hasHtml;
+      readerImages = false;                 // reset per message
+      readerDark = themeMode === 'dark';    // ditto — start from the app theme
+      // Only the remote-image notice is HTML-specific; the rest of the bar is universal.
+      if (imgbar) imgbar.style.display = currentHasHtml ? '' : 'none';
+      plain.style.display = currentHasHtml ? 'none' : '';
+      wrap.style.display = currentHasHtml ? '' : 'none';
+      applyReaderMode();
     }
 
     var loadImagesBtn = document.getElementById('load-images');
@@ -351,8 +357,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
     var themeToggleBtn = document.getElementById('reader-theme');
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', function () {
       readerDark = !readerDark;
-      updateThemeToggleIcon();
-      loadReaderFrame();
+      applyReaderMode();
     });
 
     var printBtn = document.getElementById('reader-print');
@@ -377,12 +382,8 @@ foreach ($isDraftView ? [] : $rows as $row) {
       document.body.appendChild(tmp);
     });
 
-    // Initialise the frame for the pre-selected message (respecting the theme).
-    updateThemeToggleIcon();
-    (function () {
-      var sel = currentMsgId ? messages[currentMsgId] : null;
-      if (sel && sel.hasHtml) loadReaderFrame();
-    })();
+    // Initialise the pre-selected message's rendering (respecting the app theme).
+    applyReaderMode();
 
     // Row actions: pin toggle (IMAP \Flagged), archive, trash — server write + cache + UI.
     var mainCsrf = <?= json_encode($csrfToken) ?>;
