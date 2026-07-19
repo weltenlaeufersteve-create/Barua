@@ -4,6 +4,17 @@
 
 use Barua\Mail\MessageRepository;
 
+/**
+ * Cache-busting URL for a file under public/. Appends the file's modification time, so
+ * every deployed change produces a new URL and browsers fetch it instead of serving a
+ * stale copy — no more clearing the cache by hand on mobile.
+ */
+function asset(string $path): string
+{
+    $file = __DIR__ . '/../public' . $path;
+    return $path . '?v=' . (is_file($file) ? filemtime($file) : time());
+}
+
 /** Inline stroke SVG icons for the sidebar / row actions (currentColor, 16px). */
 function sidebarIcon(string $name): string
 {

@@ -105,9 +105,9 @@ foreach ($isDraftView ? [] : $rows as $row) {
     if (theme) document.documentElement.setAttribute('data-theme', theme);
   })();
 </script>
-<link rel="stylesheet" href="/css/theme.css">
-<link rel="stylesheet" href="/css/app.css">
-<link rel="stylesheet" href="/css/inbox.css">
+<link rel="stylesheet" href="<?= asset('/css/theme.css') ?>">
+<link rel="stylesheet" href="<?= asset('/css/app.css') ?>">
+<link rel="stylesheet" href="<?= asset('/css/inbox.css') ?>">
 </head>
 <body data-mobile-view="list">
   <div class="app">

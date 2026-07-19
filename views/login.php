@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/helpers.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,8 +13,8 @@
     if (theme) document.documentElement.setAttribute('data-theme', theme);
   })();
 </script>
-<link rel="stylesheet" href="/css/theme.css">
-<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="<?= asset('/css/theme.css') ?>">
+<link rel="stylesheet" href="<?= asset('/css/app.css') ?>">
 </head>
 <body>
   <div class="center-screen">
