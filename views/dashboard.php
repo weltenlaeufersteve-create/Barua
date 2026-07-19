@@ -303,7 +303,11 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           echo htmlspecialchars($selBody !== '' ? $selBody : '(No text content)');
         ?></div>
         <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>
-          <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
+          <!-- allow-same-origin lets the parent read the document height to size the frame
+               to its content (see sizeReaderFrame). Deliberately WITHOUT allow-scripts —
+               that pairing is the dangerous one. Scripts stay blocked three ways: no
+               allow-scripts, the endpoint's CSP default-src 'none', and the sanitizer. -->
+          <iframe class="reader__frame" id="reader-frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
         </div>
         <!-- Below the mail body/iframe, not above — reachable via the reader's own
              scroll (.reader__content already scrolls as a whole). -->
@@ -364,6 +368,24 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
       var frame = document.getElementById('reader-frame');
       if (frame && currentMsgId) frame.src = readerFrameSrc();
     }
+
+    // Size the frame to its content instead of a fixed height: a short mail no longer
+    // leaves a large void before the attachments, and a long one scrolls with the reader
+    // as a whole rather than inside its own nested scrollbar.
+    function sizeReaderFrame() {
+      var frame = document.getElementById('reader-frame');
+      if (!frame) return;
+      var doc;
+      try { doc = frame.contentDocument; } catch (e) { return; }
+      if (!doc || !doc.documentElement) return;
+      // Collapse first, else a previously taller frame keeps its own height as the floor.
+      frame.style.height = '0px';
+      var h = Math.max(
+        doc.documentElement.scrollHeight,
+        doc.body ? doc.body.scrollHeight : 0
+      );
+      frame.style.height = Math.max(h, 120) + 'px';
+    }
     function updateThemeToggleIcon() {
       var btn = document.getElementById('reader-theme');
       if (btn) btn.innerHTML = readerDark ? SUN_SVG : MOON_SVG; // shows what you'll switch TO
@@ -415,6 +437,20 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', function () {
       readerDark = !readerDark;
       applyReaderMode();
+    });
+
+    var readerFrameEl = document.getElementById('reader-frame');
+    if (readerFrameEl) {
+      readerFrameEl.addEventListener('load', function () {
+        sizeReaderFrame();
+        // Images that finish decoding after load can still grow the document.
+        setTimeout(sizeReaderFrame, 300);
+      });
+    }
+    var frameResizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(frameResizeTimer);
+      frameResizeTimer = setTimeout(sizeReaderFrame, 150); // content reflows at new width
     });
 
     var printBtn = document.getElementById('reader-print');

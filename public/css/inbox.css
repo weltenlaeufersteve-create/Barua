@@ -481,12 +481,9 @@
 .reader__subject, .reader__meta, .reader__attachments { flex-shrink: 0; }
 .reader__htmlwrap {
   position: relative;
-  /* Natural height (min-height as the floor), not flex:1 — same reasoning as
-     .reader__body above: stretching to fill the pane pushed attachments to the very
-     bottom edge for short mail, making them look stuck to the toolbar below instead of
-     following the mail content. */
+  /* Wraps the content-sized frame — no min-height of its own, or it would reintroduce
+     the empty gap under short mail that the frame sizing exists to remove. */
   flex: 0 0 auto;
-  min-height: 380px;
   display: flex;
   flex-direction: column;
   /* Full-bleed: stretch to the reader pane edges (counters .reader__content padding). */
@@ -582,9 +579,12 @@
 .reader__menu-item .sidebar__icon { width: 15px; height: 15px; color: inherit; }
 
 .reader__frame {
-  flex: 1;
-  min-height: 360px;
+  display: block;
   width: 100%;
+  /* Starting height only — sizeReaderFrame() replaces it with the measured content
+     height on load. No flex:1/min-height: those forced short mail to leave a void and
+     made long mail scroll inside the frame instead of with the reader. */
+  height: 300px;
   border: none;
   border-radius: 0;
   background: transparent; /* dark mail lets the theme --reader-bg show through */
