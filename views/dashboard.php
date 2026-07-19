@@ -267,6 +267,9 @@ foreach ($isDraftView ? [] : $rows as $row) {
             <div class="reader__more">
               <button type="button" class="icon-btn" id="reader-more" title="More actions"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
               <div class="reader__menu" id="reader-menu">
+                <button type="button" class="reader__menu-item" data-compose="reply"><?= sidebarIcon('reply') ?> Reply</button>
+                <button type="button" class="reader__menu-item" data-compose="forward"><?= sidebarIcon('forward') ?> Forward</button>
+                <div class="reader__menu-sep"></div>
                 <button type="button" class="reader__menu-item" data-action="trash"><?= sidebarIcon('trash') ?> Delete</button>
                 <button type="button" class="reader__menu-item" data-action="archive"><?= sidebarIcon('archive') ?> Archive</button>
                 <button type="button" class="reader__menu-item" data-action="spam"><?= sidebarIcon('spam') ?> Mark as spam</button>
@@ -590,6 +593,12 @@ foreach ($isDraftView ? [] : $rows as $row) {
           if (!currentMsgId) return;
           var msgId = currentMsgId;
 
+          // Reply / Forward — same handlers the toolbar pills use.
+          if (item.dataset.compose) {
+            if (item.dataset.compose === 'reply') { openReply(); } else { openForward(); }
+            return;
+          }
+
           // "Move to group" — local only, no IMAP round-trip.
           if (item.dataset.group) {
             msgAction(msgId, 'group', { group: item.dataset.group }, function (res) {
@@ -656,8 +665,8 @@ foreach ($isDraftView ? [] : $rows as $row) {
         'Subject: ' + (msg.subject || '') + '\n\n' +
         msg.body.split('\n').map(function (l) { return '> ' + l; }).join('\n');
     }
-    var replyBtn = document.getElementById('reader-reply');
-    if (replyBtn) replyBtn.addEventListener('click', function () {
+    // Named so the toolbar pills and the ⋮ menu can share them.
+    function openReply() {
       var msg = messages[currentMsgId];
       if (!msg || !window.baruaCompose) return;
       var subj = /^re:/i.test(msg.subject || '') ? msg.subject : 'Re: ' + (msg.subject || '');
@@ -665,9 +674,8 @@ foreach ($isDraftView ? [] : $rows as $row) {
         title: 'Reply', fromAccount: msg.accountId, to: msg.email,
         subject: subj, body: quote(msg), inReplyTo: msg.messageId, references: msg.messageId
       });
-    });
-    var fwdBtn = document.getElementById('reader-forward');
-    if (fwdBtn) fwdBtn.addEventListener('click', function () {
+    }
+    function openForward() {
       var msg = messages[currentMsgId];
       if (!msg || !window.baruaCompose) return;
       var subj = /^fwd?:/i.test(msg.subject || '') ? msg.subject : 'Fwd: ' + (msg.subject || '');
@@ -675,7 +683,11 @@ foreach ($isDraftView ? [] : $rows as $row) {
         title: 'Forward', fromAccount: msg.accountId, to: '',
         subject: subj, body: quote(msg)
       });
-    });
+    }
+    var replyBtn = document.getElementById('reader-reply');
+    if (replyBtn) replyBtn.addEventListener('click', openReply);
+    var fwdBtn = document.getElementById('reader-forward');
+    if (fwdBtn) fwdBtn.addEventListener('click', openForward);
 
     // ---- Live stream: poll for new mail, slide it into the list ----
     var notifyEl = document.getElementById('list-notify');
