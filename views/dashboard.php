@@ -27,7 +27,11 @@ $buildUrl = function (?int $account, string $folderView): string {
 
 // Folder view = scope (all / account) × folder (inbox / sent / pinned).
 $pinnedCount = MessageRepository::pinnedCount($activeAccountId);
-if ($view === 'sent') {
+if ($view === 'clean') {
+    $rows = MessageRepository::cleanInboxMessages(100, $activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'Clean Inbox';
+    $listSubtitle = $activeAccount ? 'Clean Inbox' : 'All accounts';
+} elseif ($view === 'sent') {
     $rows = MessageRepository::sentMessages(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Sent';
     $listSubtitle = $activeAccount ? 'Sent' : 'All accounts';
@@ -135,6 +139,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
 
       <div class="sidebar__section-header">Filter</div>
 
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'clean')) ?>" class="sidebar__item<?= $view === 'clean' ? ' is-active' : '' ?>"><?= sidebarIcon('clean') ?> Clean Inbox <span class="sidebar__count"><?= MessageRepository::cleanInboxUnread($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count" id="pinned-count"><?= $pinnedCount ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'people')) ?>" class="sidebar__item<?= $view === 'people' ? ' is-active' : '' ?>"><?= sidebarIcon('people') ?> Conversations <span class="sidebar__count"><?= MessageRepository::peopleUnread($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'newsletters')) ?>" class="sidebar__item<?= $view === 'newsletters' ? ' is-active' : '' ?>"><?= sidebarIcon('newsletters') ?> Newsletters <span class="sidebar__count"><?= MessageRepository::groupUnread('newsletter', $activeAccountId) ?: '' ?></span></a>
@@ -176,6 +181,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         // Quick filter pills (mobile only) — filter without opening the sidebar.
         $filterPills = [
             ['inbox',        'inbox',        'Inbox'],
+            ['clean',        'clean',        'Clean Inbox'],
             ['pinned',       'pinned',       'Pinned'],
             ['people',       'people',       'Conversations'],
             ['newsletters',  'newsletters',  'Newsletters'],
@@ -184,6 +190,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         // Same count sources as the sidebar, so the numbers always agree.
         $pillCounts = [
             'inbox'         => $totalUnread,
+            'clean'         => MessageRepository::cleanInboxUnread($activeAccountId),
             'pinned'        => $pinnedCount,
             'people'        => MessageRepository::peopleUnread($activeAccountId),
             'newsletters'   => MessageRepository::groupUnread('newsletter', $activeAccountId),

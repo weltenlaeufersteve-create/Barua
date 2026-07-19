@@ -50,7 +50,7 @@ if ($path === '/' || $path === '') {
     $username = $_SESSION['user'];
     $csrfToken = Auth::csrfToken();
     $activeAccountId = isset($_GET['account']) ? (int) $_GET['account'] : null;
-    $view = in_array($_GET['view'] ?? '', ['sent', 'pinned', 'archive', 'trash', 'spam', 'drafts', 'newsletters', 'notifications', 'people'], true) ? $_GET['view'] : 'inbox';
+    $view = in_array($_GET['view'] ?? '', ['clean', 'sent', 'pinned', 'archive', 'trash', 'spam', 'drafts', 'newsletters', 'notifications', 'people'], true) ? $_GET['view'] : 'inbox';
     require __DIR__ . '/../views/dashboard.php';
     return;
 }
@@ -96,13 +96,14 @@ if ($path === '/api/stream' && $method === 'GET') {
     header('Content-Type: application/json');
     require_once __DIR__ . '/../views/helpers.php';
 
-    $view = in_array($_GET['view'] ?? '', ['inbox', 'pinned', 'archive', 'trash', 'spam', 'newsletters', 'notifications', 'people'], true)
+    $view = in_array($_GET['view'] ?? '', ['inbox', 'clean', 'pinned', 'archive', 'trash', 'spam', 'newsletters', 'notifications', 'people'], true)
         ? $_GET['view'] : 'inbox';
     $accountId = ($_GET['account'] ?? '') !== '' ? (int) $_GET['account'] : null;
     $after = (int) ($_GET['after'] ?? 0);
 
     $R = \Barua\Mail\MessageRepository::class;
     $rows = match ($view) {
+        'clean'         => $R::cleanInboxMessages(60, $accountId),
         'pinned'        => $R::pinnedMessages(60, $accountId),
         'archive'       => $R::roleMessages('archive', 60, $accountId),
         'trash'         => $R::roleMessages('trash', 60, $accountId),
