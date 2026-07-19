@@ -148,7 +148,8 @@
   gap: 5px;
   padding: 5px 10px;
   border-radius: 999px;
-  background: var(--hover-bg);
+  /* Reader surface, not --hover-bg: it reads as a distinct layer against the list. */
+  background: var(--reader-bg);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
@@ -433,6 +434,23 @@
 }
 .reader__floatbar .icon-btn { color: var(--text-secondary); }
 
+/* Reader pin — same language as the list rows: outline when unset, filled when set,
+   and hovering previews the result (a set pin empties out to preview un-pinning). */
+.reader-pin .ra-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: fill 0.12s ease;
+}
+.reader-pin:hover .ra-icon { fill: currentColor; }
+.reader-pin.is-pinned { color: var(--accent); }
+.reader-pin.is-pinned .ra-icon { fill: currentColor; }
+.reader-pin.is-pinned:hover .ra-icon { fill: none; }
+
 /* ⋮ overflow menu in the reader bar (Delete / Archive / Spam). */
 .reader__more { position: relative; }
 .reader__menu {
@@ -636,7 +654,6 @@
     font-size: 15px;
     gap: 8px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
-    background: var(--list-bg);
     border: 1px solid var(--border);
   }
   .filter-pill .sidebar__icon { width: 17px; height: 17px; }

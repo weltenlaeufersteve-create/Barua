@@ -111,6 +111,7 @@ function mailRowData(array $row): array
         'fullTime'      => MessageRepository::fullTimeLabel($row['date_sent']),
         'initial'       => initial($row),
         'hasHtml'       => trim($row['body_html'] ?? '') !== '',
+        'pinned'        => (int) ($row['is_starred'] ?? 0) === 1,
         'body'          => $body !== '' ? $body : '(No text content)',
     ];
 }

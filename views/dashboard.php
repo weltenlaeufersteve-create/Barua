@@ -262,6 +262,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
           <div class="reader__imgbar" id="reader-imgbar"<?= $selHasHtml ? '' : ' style="display:none"' ?>>Remote images blocked · <span id="load-images">Load images</span></div>
           <div class="reader__floatbar" id="reader-floatbar">
             <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
+            <button type="button" class="icon-btn reader-pin<?= (int) ($selected['is_starred'] ?? 0) === 1 ? ' is-pinned' : '' ?>" id="reader-pin" title="Pin"><?= rowActionIcon('pin') ?></button>
             <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
             <div class="reader__more">
               <button type="button" class="icon-btn" id="reader-more" title="More actions"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
@@ -342,7 +343,14 @@ foreach ($isDraftView ? [] : $rows as $row) {
       if (currentHasHtml) loadReaderFrame();
     }
 
+    // Reflect a message's pinned state on the reader's pin button.
+    function setReaderPin(pinned) {
+      var btn = document.getElementById('reader-pin');
+      if (btn) btn.classList.toggle('is-pinned', !!pinned);
+    }
+
     function showReaderBody(msg) {
+      setReaderPin(msg.pinned);
       var plain = document.getElementById('reader-body');
       var wrap = document.getElementById('reader-html');
       var imgbar = document.getElementById('reader-imgbar');
@@ -504,6 +512,9 @@ foreach ($isDraftView ? [] : $rows as $row) {
         msgAction(id, 'pin', { pinned: nowPinned ? '1' : '0' }, function (res) {
           if (!res.ok) { pinBtn.classList.toggle('is-pinned', !nowPinned); return; }
           bumpPinnedBadge(nowPinned ? 1 : -1);
+          if (messages[id]) messages[id].pinned = nowPinned;
+          // Keep the reader's pin in step when it's the same message.
+          if (parseInt(id, 10) === currentMsgId) setReaderPin(nowPinned);
           if (!nowPinned && currentView === 'pinned') removeRow(row);
         });
       });
@@ -535,6 +546,24 @@ foreach ($isDraftView ? [] : $rows as $row) {
         var row = document.querySelector('.mail-row[data-msg="' + currentMsgId + '"]');
         if (row) removeRow(row);
         document.body.setAttribute('data-mobile-view', 'list');
+      });
+    });
+
+    // Reader pin: same action as the row icon, and both stay in step.
+    var readerPinBtn = document.getElementById('reader-pin');
+    if (readerPinBtn) readerPinBtn.addEventListener('click', function () {
+      if (!currentMsgId) return;
+      var msgId = currentMsgId;
+      var nowPinned = !readerPinBtn.classList.contains('is-pinned');
+      setReaderPin(nowPinned); // optimistic
+      msgAction(msgId, 'pin', { pinned: nowPinned ? '1' : '0' }, function (res) {
+        if (!res.ok) { setReaderPin(!nowPinned); return; }
+        if (messages[msgId]) messages[msgId].pinned = nowPinned;
+        bumpPinnedBadge(nowPinned ? 1 : -1);
+        var rowPin = document.querySelector('.mail-row[data-msg="' + msgId + '"] .row-action--pin');
+        if (rowPin) rowPin.classList.toggle('is-pinned', nowPinned);
+        var row = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
+        if (!nowPinned && currentView === 'pinned' && row) removeRow(row);
       });
     });
 
