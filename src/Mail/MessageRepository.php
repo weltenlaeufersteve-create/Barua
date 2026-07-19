@@ -139,6 +139,51 @@ class MessageRepository
         return (int) $stmt->fetchColumn();
     }
 
+    /**
+     * Mail that actually carries a file. Spans inbox + archive like Pinned, not inbox
+     * alone: this is a "where was that invoice?" tool, and the invoice is usually already
+     * archived. Matches on the attachments table (excluding inline images) rather than the
+     * has_attachments flag — that flag counts a newsletter's social icons as attachments.
+     */
+    private const REAL_ATTACHMENT_EXISTS =
+        "EXISTS (SELECT 1 FROM attachments a WHERE a.message_id = %s
+                 AND (a.disposition IS NULL OR a.disposition <> 'inline'))";
+
+    public static function attachmentMessages(int $limit = 100, ?int $accountId = null): array
+    {
+        $where = "m.folder_role IN ('inbox','archive') AND m.is_archived = 0
+                  AND " . sprintf(self::REAL_ATTACHMENT_EXISTS, 'm.id');
+        $params = [];
+        if ($accountId !== null) {
+            $where .= ' AND m.account_id = ?';
+            $params[] = $accountId;
+        }
+        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
+                FROM messages m
+                JOIN accounts a ON a.id = m.account_id
+                WHERE $where
+                ORDER BY m.date_sent DESC
+                LIMIT " . (int) $limit;
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /** Total, not unread — consistent with Pinned/Archive, where the count is the size. */
+    public static function attachmentCount(?int $accountId = null): int
+    {
+        $where = "folder_role IN ('inbox','archive') AND is_archived = 0
+                  AND " . sprintf(self::REAL_ATTACHMENT_EXISTS, 'messages.id');
+        $params = [];
+        if ($accountId !== null) {
+            $where .= ' AND account_id = ?';
+            $params[] = $accountId;
+        }
+        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function peopleMessages(int $limit = 100, ?int $accountId = null): array
     {
         // Either explicitly filed here by hand, or the computed rule: not bulk mail and

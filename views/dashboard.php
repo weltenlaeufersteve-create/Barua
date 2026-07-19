@@ -54,6 +54,10 @@ if ($view === 'clean') {
     $groupLabel = ucfirst($view);
     $listTitle = $activeAccount ? $activeAccount['label'] : $groupLabel;
     $listSubtitle = $activeAccount ? $groupLabel : 'All accounts';
+} elseif ($view === 'attachments') {
+    $rows = MessageRepository::attachmentMessages(100, $activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'Attachments';
+    $listSubtitle = $activeAccount ? 'Attachments' : 'All accounts';
 } elseif ($view === 'people') {
     $rows = MessageRepository::peopleMessages(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Conversations';
@@ -153,6 +157,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'people')) ?>" class="sidebar__item<?= $view === 'people' ? ' is-active' : '' ?>"><?= sidebarIcon('people') ?> Conversations <span class="sidebar__count"><?= MessageRepository::peopleUnread($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'newsletters')) ?>" class="sidebar__item<?= $view === 'newsletters' ? ' is-active' : '' ?>"><?= sidebarIcon('newsletters') ?> Newsletters <span class="sidebar__count"><?= MessageRepository::groupUnread('newsletter', $activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'notifications')) ?>" class="sidebar__item<?= $view === 'notifications' ? ' is-active' : '' ?>"><?= sidebarIcon('notifications') ?> Notifications <span class="sidebar__count"><?= MessageRepository::groupUnread('notification', $activeAccountId) ?: '' ?></span></a>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'attachments')) ?>" class="sidebar__item<?= $view === 'attachments' ? ' is-active' : '' ?>"><?= sidebarIcon('attachment') ?> Attachments <span class="sidebar__count"><?= MessageRepository::attachmentCount($activeAccountId) ?: '' ?></span></a>
 
       <div class="sidebar__section-header">Folder</div>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'drafts')) ?>" class="sidebar__item<?= $view === 'drafts' ? ' is-active' : '' ?>"><?= sidebarIcon('drafts') ?> Drafts <span class="sidebar__count" id="drafts-count"><?= \Barua\Mail\DraftRepository::count($activeAccountId) ?: '' ?></span></a>
@@ -195,6 +200,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
             ['people',       'people',       'Conversations'],
             ['newsletters',  'newsletters',  'Newsletters'],
             ['notifications','notifications','Notifications'],
+            ['attachments',  'attachment',   'Attachments'],
         ];
         // Same count sources as the sidebar, so the numbers always agree.
         $pillCounts = [
@@ -204,6 +210,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
             'people'        => MessageRepository::peopleUnread($activeAccountId),
             'newsletters'   => MessageRepository::groupUnread('newsletter', $activeAccountId),
             'notifications' => MessageRepository::groupUnread('notification', $activeAccountId),
+            'attachments'   => MessageRepository::attachmentCount($activeAccountId),
         ];
       ?>
       <!-- Same markup serves both layouts: a wrapping row under the header on desktop,
@@ -234,6 +241,8 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
             No newsletters detected (within the synced range).
           <?php elseif ($view === 'notifications'): ?>
             No notifications detected (within the synced range).
+          <?php elseif ($view === 'attachments'): ?>
+            No mail with attachments (within the synced range).
           <?php else: ?>
             No messages yet. Click ⟳ to sync your accounts.
           <?php endif; ?>
