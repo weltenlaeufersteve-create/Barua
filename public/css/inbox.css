@@ -437,6 +437,10 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
+  /* Flipped above the chip when there isn't room below (see the click handler): the
+     reader scrolls with overflow-y, which clips absolutely positioned children at its
+     edge, so a downward menu on the last chip row would be cut off by the toolbar.
+     A higher z-index can't fix that — only opening upward keeps it inside the box. */
   z-index: 20;
   min-width: 140px;
   padding: 5px;
@@ -447,6 +451,7 @@
   display: none;
 }
 .attachment-chip.is-menu-open .attachment-chip__menu { display: block; }
+.attachment-chip.is-menu-up .attachment-chip__menu { top: auto; bottom: calc(100% + 6px); }
 .attachment-chip__menu-item {
   display: block;
   padding: 7px 10px;

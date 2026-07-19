@@ -669,8 +669,18 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
     if (attWrap) {
       function closeAttachmentMenus() {
         attWrap.querySelectorAll('.attachment-chip.is-menu-open').forEach(function (c) {
-          c.classList.remove('is-menu-open');
+          c.classList.remove('is-menu-open', 'is-menu-up');
         });
+      }
+      // Flip the menu above its chip when it wouldn't fit below. The reader scrolls with
+      // overflow-y, which clips absolutely positioned children at its edge, so the last
+      // chip row's menu would otherwise disappear under the Reply/Forward/Archive bar.
+      function placeAttachmentMenu(chip) {
+        var menu = chip.querySelector('.attachment-chip__menu');
+        var scroller = document.querySelector('.reader__content');
+        if (!menu || !scroller) return;
+        var room = scroller.getBoundingClientRect().bottom - chip.getBoundingClientRect().bottom;
+        chip.classList.toggle('is-menu-up', room < menu.offsetHeight + 12);
       }
       attWrap.addEventListener('click', function (e) {
         var chip = e.target.closest('.attachment-chip');
@@ -680,7 +690,10 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           e.stopPropagation();
           var wasOpen = chip.classList.contains('is-menu-open');
           closeAttachmentMenus();
-          if (!wasOpen) chip.classList.add('is-menu-open');
+          if (!wasOpen) {
+            chip.classList.add('is-menu-open'); // must be visible before it can be measured
+            placeAttachmentMenu(chip);
+          }
           return;
         }
         if (e.target.closest('.attachment-chip__menu')) {
