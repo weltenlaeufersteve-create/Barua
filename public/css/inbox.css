@@ -384,11 +384,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  /* margin-top cancels the -28px margin-bottom on .reader__body/.reader__htmlwrap (flex
-     item margins don't collapse in a column flex container, unlike normal block flow) —
-     without it this would overlap the last ~28px of the mail body/iframe above it. The
-     container's own bottom padding provides the gap below, so nothing needed there. */
-  margin: 28px -32px 0;
+  /* margin-top = 28px cancels the -28px margin-bottom on .reader__body/.reader__htmlwrap
+     (flex item margins don't collapse in a column flex container, unlike normal block
+     flow) plus 27px of actual visual gap above the line — about a third more than the
+     20px gap below the line (line-to-attachment), so the line reads closer to the
+     attachments than to the mail content it separates from. */
+  margin: 55px -32px 0;
   padding: 20px 32px 0;
   border-top: 1px solid var(--border);
 }
