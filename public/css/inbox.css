@@ -461,9 +461,13 @@
   line-height: 1.7;
   color: var(--text-primary);
   white-space: pre-wrap;
-  /* Full-bleed surface like the HTML mail box, so the light/dark toggle covers the
-     whole pane instead of tinting a floating column of text. */
-  flex: 1;
+  /* Natural height, not flex:1 — a stretch-to-fill body used to force any trailing
+     attachments down to the very bottom edge regardless of how short the mail was,
+     making them look glued to the Reply/Forward/Archive bar instead of scrolling with
+     the mail. min-height keeps the light/dark toggle's full-bleed background reasonably
+     sized for short mail without forcing it. */
+  flex: 0 0 auto;
+  min-height: 200px;
   margin: 0 -32px -28px;
   padding: 24px 32px;
 }
@@ -476,7 +480,11 @@
 .reader__subject, .reader__meta, .reader__attachments { flex-shrink: 0; }
 .reader__htmlwrap {
   position: relative;
-  flex: 1;
+  /* Natural height (min-height as the floor), not flex:1 — same reasoning as
+     .reader__body above: stretching to fill the pane pushed attachments to the very
+     bottom edge for short mail, making them look stuck to the toolbar below instead of
+     following the mail content. */
+  flex: 0 0 auto;
   min-height: 380px;
   display: flex;
   flex-direction: column;
