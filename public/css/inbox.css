@@ -296,13 +296,25 @@
 /* Hovering an active pin lifts the fill off — a preview of un-pinning. */
 .row-action--pin.is-pinned:hover .ra-icon { fill: none; }
 
-.mail-row__body { min-width: 0; flex: 1; }
-
-.mail-row__top {
+/* Row body splits into the text column and a right-hand meta column (time, then the
+   attachment clip beneath it) — a stable home for per-mail indicators that never
+   competes with the subject for width. */
+.mail-row__body {
+  min-width: 0;
+  flex: 1;
   display: flex;
-  justify-content: space-between;
   gap: 8px;
 }
+.mail-row__main { min-width: 0; flex: 1; }
+.mail-row__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.mail-row__clip { display: flex; }
+.mail-row__clip .sidebar__icon { width: 13px; height: 13px; color: var(--text-tertiary); }
 
 .mail-row__sender {
   font-size: 13.5px;

@@ -120,6 +120,7 @@ if ($path === '/api/stream' && $method === 'GET') {
     $newRows = array_map(function ($row) use ($attByMsg) {
         $data = mailRowData($row);
         $data['attachments'] = $attByMsg[(int) $row['id']] ?? [];
+        $row['has_real_attachments'] = isset($attByMsg[(int) $row['id']]);
         return [
             'id'   => (int) $row['id'],
             'html' => renderMailRow($row, false, false),

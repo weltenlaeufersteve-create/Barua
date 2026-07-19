@@ -84,16 +84,29 @@ function renderMailRow(array $row, bool $isDraftView = false, bool $isSelected =
           . '<span class="row-action" title="Archive">' . rowActionIcon('archive') . '</span>'
           . '<span class="row-action" title="Delete">' . rowActionIcon('trash') . '</span>';
 
+    // Right-hand meta column: time, and below it the attachment clip. Deliberately its
+    // own column rather than inline with the subject — the subject keeps its full width
+    // and doesn't shift depending on whether a mail has attachments.
+    // Set by the caller from the batched attachment lookup, which already excludes
+    // inline images: `has_attachments` alone would put a clip on every newsletter whose
+    // only "attachments" are its social icons.
+    $clip = !empty($row['has_real_attachments'])
+        ? '<span class="mail-row__clip" title="Has attachments">' . sidebarIcon('attachment') . '</span>'
+        : '';
+
     return '<div class="' . $cls . '" ' . $idAttr . ' data-account="' . (int) $row['account_id'] . '">'
         . '<div class="mail-row__actions">' . $actions . '</div>'
         . '<span class="mail-row__stripe" style="background: ' . $e($row['account_colour']) . '"></span>'
         . '<div class="mail-row__body">'
-        . '<div class="mail-row__top">'
-        . '<span class="mail-row__sender">' . $e($sender) . '</span>'
-        . '<span class="mail-row__time">' . $e(MessageRepository::timeLabel($row['date_sent'])) . '</span>'
-        . '</div>'
+        . '<div class="mail-row__main">'
+        . '<div class="mail-row__sender">' . $e($sender) . '</div>'
         . '<div class="mail-row__subject">' . $e($subject) . '</div>'
         . '<div class="mail-row__preview">' . $e($row['body_snippet'] ?? '') . '</div>'
+        . '</div>'
+        . '<div class="mail-row__meta">'
+        . '<span class="mail-row__time">' . $e(MessageRepository::timeLabel($row['date_sent'])) . '</span>'
+        . $clip
+        . '</div>'
         . '</div></div>';
 }
 

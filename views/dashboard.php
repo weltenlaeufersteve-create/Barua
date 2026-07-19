@@ -245,6 +245,9 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         <div class="mail-list__date-group" data-group="<?= htmlspecialchars($groupName) ?>"><?= htmlspecialchars($groupName) ?></div>
         <?php foreach ($groupRows as $row):
           $isSelected = $selected && $row['id'] === $selected['id'];
+          // Reuse the batched lookup above — its keys are exactly the messages that have
+          // a real (non-inline) attachment.
+          $row['has_real_attachments'] = isset($attachmentsByMessage[(int) $row['id']]);
           echo renderMailRow($row, $isDraftView, (bool) $isSelected);
         endforeach; ?>
       <?php endforeach; ?>
