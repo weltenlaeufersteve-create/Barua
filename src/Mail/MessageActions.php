@@ -85,6 +85,12 @@ class MessageActions
         return self::moveToRole($messageId, 'trash');
     }
 
+    /** Move the message to the account's Spam/Junk folder and drop it from the cache. */
+    public static function spam(int $messageId): array
+    {
+        return self::moveToRole($messageId, 'spam');
+    }
+
     private static function moveToRole(int $messageId, string $role): array
     {
         [$row, $account] = self::load($messageId);

@@ -68,7 +68,7 @@ class SyncService
             // Sync the account's INBOX, Sent, Archive and Trash folders (Drafts/Spam later).
             $roles = FolderResolver::map($client);
             $toSync = ['inbox' => $roles['inbox'] ?? $client->getFolder('INBOX')];
-            foreach (['sent', 'archive', 'trash'] as $role) {
+            foreach (['sent', 'archive', 'trash', 'spam'] as $role) {
                 if (!empty($roles[$role])) {
                     $toSync[$role] = $roles[$role];
                 }

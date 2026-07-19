@@ -35,9 +35,9 @@ if ($view === 'sent') {
     $rows = MessageRepository::pinnedMessages(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Pinned';
     $listSubtitle = $activeAccount ? 'Pinned' : 'All accounts';
-} elseif ($view === 'archive' || $view === 'trash') {
+} elseif ($view === 'archive' || $view === 'trash' || $view === 'spam') {
     $rows = MessageRepository::roleMessages($view, 100, $activeAccountId);
-    $roleLabel = $view === 'archive' ? 'Archive' : 'Trash';
+    $roleLabel = ucfirst($view);
     $listTitle = $activeAccount ? $activeAccount['label'] : $roleLabel;
     $listSubtitle = $activeAccount ? $roleLabel : 'All accounts';
 } elseif ($view === 'drafts') {
@@ -142,7 +142,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'drafts')) ?>" class="sidebar__item<?= $view === 'drafts' ? ' is-active' : '' ?>"><?= sidebarIcon('drafts') ?> Drafts <span class="sidebar__count" id="drafts-count"><?= \Barua\Mail\DraftRepository::count($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'sent')) ?>" class="sidebar__item<?= $view === 'sent' ? ' is-active' : '' ?>"><?= sidebarIcon('sent') ?> Sent <span class="sidebar__count"><?= $sentCount ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'archive')) ?>" class="sidebar__item<?= $view === 'archive' ? ' is-active' : '' ?>"><?= sidebarIcon('archive') ?> Archive <span class="sidebar__count"><?= MessageRepository::roleCount('archive', $activeAccountId) ?: '' ?></span></a>
-      <div class="sidebar__item"><?= sidebarIcon('spam') ?> Spam</div>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'spam')) ?>" class="sidebar__item<?= $view === 'spam' ? ' is-active' : '' ?>"><?= sidebarIcon('spam') ?> Spam <span class="sidebar__count"><?= MessageRepository::roleCount('spam', $activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'trash')) ?>" class="sidebar__item<?= $view === 'trash' ? ' is-active' : '' ?>"><?= sidebarIcon('trash') ?> Trash <span class="sidebar__count"><?= MessageRepository::roleCount('trash', $activeAccountId) ?: '' ?></span></a>
       </div>
 
@@ -179,10 +179,19 @@ foreach ($isDraftView ? [] : $rows as $row) {
             ['newsletters',  'newsletters',  'Newsletters'],
             ['notifications','notifications','Notifications'],
         ];
+        // Same count sources as the sidebar, so the numbers always agree.
+        $pillCounts = [
+            'inbox'         => $totalUnread,
+            'pinned'        => $pinnedCount,
+            'people'        => MessageRepository::peopleUnread($activeAccountId),
+            'newsletters'   => MessageRepository::groupUnread('newsletter', $activeAccountId),
+            'notifications' => MessageRepository::groupUnread('notification', $activeAccountId),
+        ];
       ?>
       <div class="filter-pills">
         <?php foreach ($filterPills as [$pv, $picon, $plabel]): ?>
-          <a href="<?= htmlspecialchars($buildUrl($activeAccountId, $pv)) ?>" class="filter-pill<?= $view === $pv ? ' is-active' : '' ?>"><?= sidebarIcon($picon) ?> <?= $plabel ?></a>
+          <?php $pcount = $pillCounts[$pv] ?? 0; ?>
+          <a href="<?= htmlspecialchars($buildUrl($activeAccountId, $pv)) ?>" class="filter-pill<?= $view === $pv ? ' is-active' : '' ?>"><?= sidebarIcon($picon) ?> <?= $plabel ?><?php if ($pcount): ?><span class="filter-pill__count"><?= (int) $pcount ?></span><?php endif; ?></a>
         <?php endforeach; ?>
       </div>
 
@@ -251,15 +260,23 @@ foreach ($isDraftView ? [] : $rows as $row) {
             <div class="reader__floatbar" id="reader-floatbar">
               <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
               <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+              <div class="reader__more">
+                <button type="button" class="icon-btn" id="reader-more" title="More actions"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+                <div class="reader__menu" id="reader-menu">
+                  <button type="button" class="reader__menu-item" data-action="trash"><?= sidebarIcon('trash') ?> Delete</button>
+                  <button type="button" class="reader__menu-item" data-action="archive"><?= sidebarIcon('archive') ?> Archive</button>
+                  <button type="button" class="reader__menu-item" data-action="spam"><?= sidebarIcon('spam') ?> Mark as spam</button>
+                </div>
+              </div>
             </div>
           </div>
           <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
         </div>
       </div>
       <div class="reader__toolbar">
-        <button class="pill" id="reader-reply">↩ Reply</button>
-        <button class="pill" id="reader-forward">↪ Forward</button>
-        <button class="pill">🗄 Archive</button>
+        <button class="pill" id="reader-reply"><?= sidebarIcon('reply') ?> Reply</button>
+        <button class="pill" id="reader-forward"><?= sidebarIcon('forward') ?> Forward</button>
+        <button class="pill" id="reader-archive"><?= sidebarIcon('archive') ?> Archive</button>
       </div>
       <?php else: ?>
       <div class="reader__content" style="color: var(--text-tertiary); font-size: 14px;">
@@ -476,7 +493,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
     }
 
     // Reader toolbar: archive the currently open message.
-    var readerArchive = document.querySelector('.reader__toolbar .pill:not(#reader-reply):not(#reader-forward)');
+    var readerArchive = document.getElementById('reader-archive');
     if (readerArchive) readerArchive.addEventListener('click', function () {
       if (!currentMsgId) return;
       msgAction(currentMsgId, 'archive', {}, function (res) {
@@ -486,6 +503,33 @@ foreach ($isDraftView ? [] : $rows as $row) {
         document.body.setAttribute('data-mobile-view', 'list');
       });
     });
+
+    // Reader ⋮ menu: Delete / Archive / Mark as spam for the open message.
+    var moreBtn = document.getElementById('reader-more');
+    var moreMenu = document.getElementById('reader-menu');
+    if (moreBtn && moreMenu) {
+      moreBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        moreMenu.classList.toggle('is-open');
+      });
+      moreMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+      document.addEventListener('click', function () { moreMenu.classList.remove('is-open'); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') moreMenu.classList.remove('is-open');
+      });
+      moreMenu.querySelectorAll('.reader__menu-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+          moreMenu.classList.remove('is-open');
+          if (!currentMsgId) return;
+          msgAction(currentMsgId, item.dataset.action, {}, function (res) {
+            if (!res.ok) return;
+            var row = document.querySelector('.mail-row[data-msg="' + currentMsgId + '"]');
+            if (row) removeRow(row);
+            document.body.setAttribute('data-mobile-view', 'list');
+          });
+        });
+      });
+    }
 
     document.querySelectorAll('[data-go]').forEach(function (el) {
       el.addEventListener('click', function () {

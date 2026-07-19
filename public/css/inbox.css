@@ -145,23 +145,29 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 5px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: var(--hover-bg);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
 }
-.filter-pill .sidebar__icon { width: 15px; height: 15px; color: inherit; }
+.filter-pill .sidebar__icon { width: 13px; height: 13px; color: inherit; }
+/* Count trails the label, like the sidebar badges. */
+.filter-pill__count { font-size: 11px; opacity: 0.65; }
 .filter-pill.is-active {
   background: var(--accent);
   color: var(--accent-text);
 }
+.filter-pill.is-active .filter-pill__count { opacity: 0.8; }
+/* Desktop pills stay compact; on mobile they grow back to a comfortable tap size. */
 @media (max-width: 900px) {
-  .filter-pills { display: flex; }
+  .filter-pill { padding: 8px 14px; font-size: 13px; gap: 6px; }
+  .filter-pill .sidebar__icon { width: 15px; height: 15px; }
+  .filter-pill__count { font-size: 12px; }
 }
 
 /* Bottom notification strip — slides up in the theme accent for new mail / events. */
@@ -419,6 +425,39 @@
 }
 .reader__floatbar .icon-btn { color: var(--text-secondary); }
 
+/* ⋮ overflow menu in the reader bar (Delete / Archive / Spam). */
+.reader__more { position: relative; }
+.reader__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 168px;
+  padding: 5px;
+  background: var(--reader-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  display: none;
+  z-index: 30;
+}
+.reader__menu.is-open { display: block; }
+.reader__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+}
+.reader__menu-item:hover { background: var(--hover-bg); }
+.reader__menu-item .sidebar__icon { width: 15px; height: 15px; color: inherit; }
+
 .reader__frame {
   flex: 1;
   min-height: 360px;
@@ -447,6 +486,9 @@
   cursor: pointer;
 }
 .pill:hover { background: var(--hover-bg); }
+/* Icon + label pills (Reply/Forward/Archive) — icons follow the label colour. */
+.pill { display: inline-flex; align-items: center; gap: 7px; }
+.pill .sidebar__icon { width: 15px; height: 15px; color: inherit; }
 
 /* ---------- Mobile ---------- */
 /* Below 900px: collapse to one visible column at a time, driven by
