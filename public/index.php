@@ -198,7 +198,7 @@ if (preg_match('#^/messages/(\d+)/html$#', $path, $m) && $method === 'GET') {
     return;
 }
 
-if (preg_match('#^/messages/(\d+)/(pin|archive|trash|spam|read)$#', $path, $m) && $method === 'POST') {
+if (preg_match('#^/messages/(\d+)/(pin|archive|trash|spam|read|group)$#', $path, $m) && $method === 'POST') {
     header('Content-Type: application/json');
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
         http_response_code(403);
@@ -215,6 +215,7 @@ if (preg_match('#^/messages/(\d+)/(pin|archive|trash|spam|read)$#', $path, $m) &
         'archive' => \Barua\Mail\MessageActions::archive($id),
         'trash'   => \Barua\Mail\MessageActions::trash($id),
         'spam'    => \Barua\Mail\MessageActions::spam($id),
+        'group'   => \Barua\Mail\MessageActions::setGroup($id, $_POST['group'] ?? ''),
         'read'    => \Barua\Mail\MessageActions::markRead($id),
     };
     if (!$result['ok']) {

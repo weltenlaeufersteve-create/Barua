@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS messages (
   is_starred TINYINT(1) DEFAULT 0,
   is_archived TINYINT(1) DEFAULT 0,
   group_type ENUM('people','newsletter','notification','other') DEFAULT 'other',
+  -- 1 = the user picked this group by hand; the classifier must not overwrite it
+  group_locked TINYINT(1) NOT NULL DEFAULT 0,
   has_attachments TINYINT(1) DEFAULT 0,
   raw_headers TEXT,
   synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,

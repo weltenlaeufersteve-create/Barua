@@ -85,6 +85,28 @@ class MessageActions
         return self::moveToRole($messageId, 'trash');
     }
 
+    /**
+     * File a message into a smart group by hand and pin that choice, so the sync's
+     * classifier stops second-guessing it. Purely local — groups are Barua's own concept,
+     * not an IMAP folder, so no server round-trip is needed.
+     */
+    public static function setGroup(int $messageId, string $group): array
+    {
+        $allowed = ['people', 'newsletter', 'notification', 'other'];
+        if (!in_array($group, $allowed, true)) {
+            return ['ok' => false, 'error' => 'Unknown group'];
+        }
+
+        $stmt = Database::connection()
+            ->prepare('UPDATE messages SET group_type = ?, group_locked = 1 WHERE id = ?');
+        $stmt->execute([$group, $messageId]);
+
+        if ($stmt->rowCount() === 0) {
+            return ['ok' => false, 'error' => 'Unknown message'];
+        }
+        return ['ok' => true, 'group' => $group];
+    }
+
     /** Move the message to the account's Spam/Junk folder and drop it from the cache. */
     public static function spam(int $messageId): array
     {

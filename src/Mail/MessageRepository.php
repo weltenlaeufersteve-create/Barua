@@ -101,8 +101,12 @@ class MessageRepository
      */
     public static function peopleMessages(int $limit = 100, ?int $accountId = null): array
     {
-        $where = "m.folder_role = 'inbox' AND m.is_archived = 0 AND m.group_type = 'other'
-                  AND LOWER(m.sender_email) IN (SELECT email FROM correspondents)";
+        // Either explicitly filed here by hand, or the computed rule: not bulk mail and
+        // from someone the user has written to before.
+        $where = "m.folder_role = 'inbox' AND m.is_archived = 0
+                  AND (m.group_type = 'people'
+                       OR (m.group_type = 'other'
+                           AND LOWER(m.sender_email) IN (SELECT email FROM correspondents)))";
         $params = [];
         if ($accountId !== null) {
             $where .= ' AND m.account_id = ?';
@@ -121,8 +125,10 @@ class MessageRepository
 
     public static function peopleUnread(?int $accountId = null): int
     {
-        $where = "folder_role = 'inbox' AND is_archived = 0 AND is_read = 0 AND group_type = 'other'
-                  AND LOWER(sender_email) IN (SELECT email FROM correspondents)";
+        $where = "folder_role = 'inbox' AND is_archived = 0 AND is_read = 0
+                  AND (group_type = 'people'
+                       OR (group_type = 'other'
+                           AND LOWER(sender_email) IN (SELECT email FROM correspondents)))";
         $params = [];
         if ($accountId !== null) {
             $where .= ' AND account_id = ?';

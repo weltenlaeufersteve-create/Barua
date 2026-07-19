@@ -52,8 +52,8 @@ if ($view === 'sent') {
     $listSubtitle = $activeAccount ? $groupLabel : 'All accounts';
 } elseif ($view === 'people') {
     $rows = MessageRepository::peopleMessages(100, $activeAccountId);
-    $listTitle = $activeAccount ? $activeAccount['label'] : 'People';
-    $listSubtitle = $activeAccount ? 'People' : 'All accounts';
+    $listTitle = $activeAccount ? $activeAccount['label'] : 'Conversations';
+    $listSubtitle = $activeAccount ? 'Conversations' : 'All accounts';
 } else {
     $rows = MessageRepository::unifiedInbox(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
@@ -136,7 +136,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
       <div class="sidebar__section-header">Filter</div>
 
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count" id="pinned-count"><?= $pinnedCount ?: '' ?></span></a>
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'people')) ?>" class="sidebar__item<?= $view === 'people' ? ' is-active' : '' ?>"><?= sidebarIcon('people') ?> People <span class="sidebar__count"><?= MessageRepository::peopleUnread($activeAccountId) ?: '' ?></span></a>
+      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'people')) ?>" class="sidebar__item<?= $view === 'people' ? ' is-active' : '' ?>"><?= sidebarIcon('people') ?> Conversations <span class="sidebar__count"><?= MessageRepository::peopleUnread($activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'newsletters')) ?>" class="sidebar__item<?= $view === 'newsletters' ? ' is-active' : '' ?>"><?= sidebarIcon('newsletters') ?> Newsletters <span class="sidebar__count"><?= MessageRepository::groupUnread('newsletter', $activeAccountId) ?: '' ?></span></a>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'notifications')) ?>" class="sidebar__item<?= $view === 'notifications' ? ' is-active' : '' ?>"><?= sidebarIcon('notifications') ?> Notifications <span class="sidebar__count"><?= MessageRepository::groupUnread('notification', $activeAccountId) ?: '' ?></span></a>
 
@@ -177,7 +177,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         $filterPills = [
             ['inbox',        'inbox',        'Inbox'],
             ['pinned',       'pinned',       'Pinned'],
-            ['people',       'people',       'People'],
+            ['people',       'people',       'Conversations'],
             ['newsletters',  'newsletters',  'Newsletters'],
             ['notifications','notifications','Notifications'],
         ];
@@ -213,7 +213,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
           <?php elseif ($view === 'drafts'): ?>
             No drafts. Start writing in the composer — it autosaves here.
           <?php elseif ($view === 'people'): ?>
-            No people mail yet. Reply to someone once and their mail shows up here.
+            No conversations yet. Reply to someone once and their mail shows up here.
           <?php elseif ($view === 'newsletters'): ?>
             No newsletters detected (within the synced range).
           <?php elseif ($view === 'notifications'): ?>
@@ -269,6 +269,11 @@ foreach ($isDraftView ? [] : $rows as $row) {
                 <button type="button" class="reader__menu-item" data-action="trash"><?= sidebarIcon('trash') ?> Delete</button>
                 <button type="button" class="reader__menu-item" data-action="archive"><?= sidebarIcon('archive') ?> Archive</button>
                 <button type="button" class="reader__menu-item" data-action="spam"><?= sidebarIcon('spam') ?> Mark as spam</button>
+                <div class="reader__menu-sep"></div>
+                <div class="reader__menu-label">Move to group</div>
+                <button type="button" class="reader__menu-item" data-group="people"><?= sidebarIcon('people') ?> Conversations</button>
+                <button type="button" class="reader__menu-item" data-group="newsletter"><?= sidebarIcon('newsletters') ?> Newsletters</button>
+                <button type="button" class="reader__menu-item" data-group="notification"><?= sidebarIcon('notifications') ?> Notifications</button>
               </div>
             </div>
           </div>
@@ -546,13 +551,35 @@ foreach ($isDraftView ? [] : $rows as $row) {
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') moreMenu.classList.remove('is-open');
       });
+      // Which view each group is shown in, so we know whether the mail still belongs
+      // in the list we're looking at after being refiled.
+      var GROUP_VIEW = { people: 'people', newsletter: 'newsletters', notification: 'notifications' };
+
       moreMenu.querySelectorAll('.reader__menu-item').forEach(function (item) {
         item.addEventListener('click', function () {
           moreMenu.classList.remove('is-open');
           if (!currentMsgId) return;
-          msgAction(currentMsgId, item.dataset.action, {}, function (res) {
+          var msgId = currentMsgId;
+
+          // "Move to group" — local only, no IMAP round-trip.
+          if (item.dataset.group) {
+            msgAction(msgId, 'group', { group: item.dataset.group }, function (res) {
+              if (!res.ok) return;
+              // Only drop the row when the current list filters by group and this
+              // mail no longer matches it; in the inbox it simply stays put.
+              if (GROUP_VIEW[item.dataset.group] !== currentView
+                  && (currentView === 'people' || currentView === 'newsletters' || currentView === 'notifications')) {
+                var gRow = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
+                if (gRow) removeRow(gRow);
+                document.body.setAttribute('data-mobile-view', 'list');
+              }
+            });
+            return;
+          }
+
+          msgAction(msgId, item.dataset.action, {}, function (res) {
             if (!res.ok) return;
-            var row = document.querySelector('.mail-row[data-msg="' + currentMsgId + '"]');
+            var row = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
             if (row) removeRow(row);
             document.body.setAttribute('data-mobile-view', 'list');
           });

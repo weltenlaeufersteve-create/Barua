@@ -464,6 +464,15 @@
   text-align: left;
 }
 .reader__menu-item:hover { background: var(--hover-bg); }
+.reader__menu-sep { height: 1px; background: var(--border); margin: 5px 4px; }
+.reader__menu-label {
+  padding: 4px 10px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
 .reader__menu-item .sidebar__icon { width: 15px; height: 15px; color: inherit; }
 
 .reader__frame {

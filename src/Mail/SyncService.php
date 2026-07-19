@@ -132,7 +132,7 @@ class SyncService
         }
 
         // Cached state for this folder.
-        $stmt = $db->prepare('SELECT imap_uid, is_read, is_starred, group_type FROM messages WHERE account_id = ? AND folder = ?');
+        $stmt = $db->prepare('SELECT imap_uid, is_read, is_starred, group_type, group_locked FROM messages WHERE account_id = ? AND folder = ?');
         $stmt->execute([$accountId, $folder->path]);
         $cached = [];
         foreach ($stmt->fetchAll() as $row) {
@@ -159,10 +159,13 @@ class SyncService
             if (!isset($cached[$uid])) {
                 continue;
             }
+            // A group the user set by hand wins over the classifier — keep it as cached.
+            $locked = (int) ($cached[$uid]['group_locked'] ?? 0) === 1;
+            $group = $locked ? $cached[$uid]['group_type'] : $f['group'];
             if ((int) $cached[$uid]['is_read'] !== $f['read']
                 || (int) $cached[$uid]['is_starred'] !== $f['star']
-                || $cached[$uid]['group_type'] !== $f['group']) {
-                $upd->execute([$f['read'], $f['star'], $f['group'], $accountId, $folder->path, $uid]);
+                || $cached[$uid]['group_type'] !== $group) {
+                $upd->execute([$f['read'], $f['star'], $group, $accountId, $folder->path, $uid]);
                 $flags++;
             }
         }
@@ -348,7 +351,8 @@ class SyncService
                      body_cached, is_read, is_starred, has_attachments, group_type)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
-                    group_type = VALUES(group_type),
+                    -- a hand-picked group survives re-syncs; the classifier only fills the rest
+                    group_type = IF(group_locked = 1, group_type, VALUES(group_type)),
                     folder_role = VALUES(folder_role),
                     is_read = VALUES(is_read),
                     is_starred = VALUES(is_starred),
