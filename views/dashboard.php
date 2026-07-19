@@ -270,24 +270,6 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           </div>
           <div class="reader__time"><?= htmlspecialchars(MessageRepository::fullTimeLabel($selected['date_sent'])) ?></div>
         </div>
-        <div class="reader__attachments" id="reader-attachments"<?= empty($selectedAttachments) ? ' style="display:none"' : '' ?>>
-          <?php foreach ($selectedAttachments as $att): ?>
-            <div class="attachment-chip" data-att-id="<?= (int) $att['id'] ?>">
-              <?= sidebarIcon('attachment') ?>
-              <div class="attachment-chip__info">
-                <span class="attachment-chip__name"><?= htmlspecialchars($att['filename']) ?></span>
-                <span class="attachment-chip__size"><?= htmlspecialchars(formatBytes($att['size'])) ?></span>
-              </div>
-              <button type="button" class="attachment-chip__more" title="More"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
-              <div class="attachment-chip__menu">
-                <a class="attachment-chip__menu-item" href="/attachments/<?= (int) $att['id'] ?>">Download</a>
-                <?php if ($att['previewable']): ?>
-                  <a class="attachment-chip__menu-item" href="/attachments/<?= (int) $att['id'] ?>?preview=1" target="_blank" rel="noopener">Preview</a>
-                <?php endif; ?>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
         <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
         <!-- Action bar sits above the mail body and is ALWAYS visible — plain-text mail
              gets the same print / light-dark / ⋮ actions as HTML mail. Only the
@@ -322,6 +304,26 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         ?></div>
         <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>
           <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
+        </div>
+        <!-- Below the mail body/iframe, not above — reachable via the reader's own
+             scroll (.reader__content already scrolls as a whole). -->
+        <div class="reader__attachments" id="reader-attachments"<?= empty($selectedAttachments) ? ' style="display:none"' : '' ?>>
+          <?php foreach ($selectedAttachments as $att): ?>
+            <div class="attachment-chip" data-att-id="<?= (int) $att['id'] ?>">
+              <?= sidebarIcon('attachment') ?>
+              <div class="attachment-chip__info">
+                <span class="attachment-chip__name"><?= htmlspecialchars($att['filename']) ?></span>
+                <span class="attachment-chip__size"><?= htmlspecialchars(formatBytes($att['size'])) ?></span>
+              </div>
+              <button type="button" class="attachment-chip__more" title="More"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+              <div class="attachment-chip__menu">
+                <a class="attachment-chip__menu-item" href="/attachments/<?= (int) $att['id'] ?>">Download</a>
+                <?php if ($att['previewable']): ?>
+                  <a class="attachment-chip__menu-item" href="/attachments/<?= (int) $att['id'] ?>?preview=1" target="_blank" rel="noopener">Preview</a>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endforeach; ?>
         </div>
       </div>
       <div class="reader__toolbar">
