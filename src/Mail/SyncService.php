@@ -396,7 +396,107 @@ class SyncService
             self::recordCorrespondents($message, $dateSent);
         }
 
+        if ($hasAttachments) {
+            // We need the row's own id (not the IMAP uid) to link attachments; look it up
+            // via the unique key we just upserted on rather than trusting lastInsertId(),
+            // which MySQL only returns reliably on the INSERT branch, not on UPDATE.
+            $idStmt = Database::connection()->prepare(
+                'SELECT id FROM messages WHERE account_id = ? AND folder = ? AND imap_uid = ?'
+            );
+            $idStmt->execute([$accountId, $folderPath, $uid]);
+            $dbId = (int) $idStmt->fetchColumn();
+            if ($dbId > 0) {
+                self::storeAttachments($dbId, $message);
+            }
+        }
+
         return true;
+    }
+
+    /**
+     * Fetch attachment content from an already-loaded IMAP message and persist it: the raw
+     * bytes to storage/attachments/{message id}/, metadata to the `attachments` table. Used
+     * both by the normal sync (new messages) and bin/backfill-attachments.php (older cached
+     * mail that predates this feature). Every part webklex reports as an attachment is
+     * stored uniformly, inline images included — our HTML renderer doesn't resolve `cid:`
+     * references yet, so treating them as downloadable is how they stay visible at all.
+     */
+    public static function storeAttachments(int $messageDbId, $message): void
+    {
+        try {
+            $attachments = $message->getAttachments();
+        } catch (\Throwable $e) {
+            return;
+        }
+        if (count($attachments) === 0) {
+            return;
+        }
+
+        $db = Database::connection();
+        // Idempotency safety net — the normal sync only calls this for never-cached
+        // messages, so this shouldn't fire, but a backfill re-run must not duplicate rows.
+        $exists = $db->prepare('SELECT COUNT(*) FROM attachments WHERE message_id = ?');
+        $exists->execute([$messageDbId]);
+        if ((int) $exists->fetchColumn() > 0) {
+            return;
+        }
+
+        $dir = self::attachmentDir($messageDbId);
+        if (!is_dir($dir) && !@mkdir($dir, 0770, true) && !is_dir($dir)) {
+            return; // storage unavailable — has_attachments=1 still signals it existed
+        }
+
+        $insert = $db->prepare(
+            'INSERT INTO attachments (message_id, filename, mime_type, size_bytes, storage_path, content_id, disposition)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+
+        $i = 0;
+        foreach ($attachments as $att) {
+            $i++;
+            try {
+                $content = (string) $att->getContent();
+            } catch (\Throwable $e) {
+                continue;
+            }
+            if ($content === '') {
+                continue;
+            }
+            $name = trim((string) $att->getName());
+            if ($name === '') {
+                $name = 'attachment-' . $i;
+            }
+            $diskName = self::safeDiskName($name, $i);
+            if (file_put_contents($dir . '/' . $diskName, $content) === false) {
+                continue;
+            }
+            $mime = (string) ($att->getContentType() ?: $att->getMimeType() ?: 'application/octet-stream');
+            $contentId = trim((string) $att->getId());
+            $disposition = strtolower(trim((string) $att->getDisposition()));
+            $insert->execute([
+                $messageDbId,
+                mb_substr($name, 0, 500),
+                mb_substr($mime, 0, 255),
+                strlen($content),
+                $messageDbId . '/' . $diskName, // relative to storage/attachments/
+                $contentId !== '' ? mb_substr($contentId, 0, 500) : null,
+                $disposition !== '' ? $disposition : null,
+            ]);
+        }
+    }
+
+    private static function attachmentDir(int $messageDbId): string
+    {
+        return __DIR__ . '/../../storage/attachments/' . $messageDbId;
+    }
+
+    /** Filesystem-safe on-disk filename; the readable original name is kept in the DB. */
+    private static function safeDiskName(string $name, int $index): string
+    {
+        $name = basename($name);
+        $name = preg_replace('/[^A-Za-z0-9._-]/', '_', $name) ?? '';
+        $name = trim($name, '._');
+        return $index . '-' . ($name !== '' ? mb_substr($name, 0, 150) : 'file');
     }
 
     /** Upsert every To/Cc address of an outgoing message into correspondents. */

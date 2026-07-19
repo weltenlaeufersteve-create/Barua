@@ -126,6 +126,10 @@ CREATE TABLE IF NOT EXISTS attachments (
   size_bytes INT,
   storage_path VARCHAR(1000),
   content_id VARCHAR(500),
+  -- MIME disposition ('attachment' vs 'inline'). Distinguishes a real attachment (PDF
+  -- invoice, forwarded file) from a decorative inline image (signature logo, newsletter
+  -- social icons) — content_id alone doesn't: webklex sets it on both.
+  disposition VARCHAR(20) NULL,
   CONSTRAINT fk_attachments_message FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

@@ -350,4 +350,59 @@ class MessageRepository
         $dt = self::toLocal($dateSent);
         return $dt ? $dt->format('j M Y, H:i') : '';
     }
+
+    /**
+     * Mime types safe to render inline in the browser ("Preview"). Deliberately narrow:
+     * images render as pure pixels (no script execution), and PDFs get the browser's
+     * sandboxed built-in viewer. SVG is excluded — it can carry <script> and executes when
+     * navigated to directly. Everything else (HTML, text, Office docs, archives, ...) stays
+     * download-only, since an attachment's content is attacker-controlled (the sender chose
+     * it) and rendering it same-origin could read the session/CSRF token.
+     * Enforced server-side in the /attachments/{id}?preview=1 route — never trust the
+     * client's request alone.
+     */
+    private const PREVIEWABLE_MIMES = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/x-icon',
+        'application/pdf',
+    ];
+
+    public static function isPreviewableMime(?string $mime): bool
+    {
+        return in_array(strtolower(trim((string) $mime)), self::PREVIEWABLE_MIMES, true);
+    }
+
+    /**
+     * Batched attachment lookup for a set of messages — one query instead of one per row,
+     * used to enrich both the server-rendered reader and the JS row map.
+     * @return array<int, array<int, array{id:int, filename:string, mimeType:string, size:int}>>
+     */
+    public static function attachmentsForMessages(array $messageIds): array
+    {
+        $messageIds = array_values(array_unique(array_map('intval', $messageIds)));
+        if (empty($messageIds)) {
+            return [];
+        }
+        // Hide decorative inline images (signature logos, newsletter social icons) —
+        // everything else shows, including a NULL disposition: better to show real content
+        // a sender's client didn't label than to hide it on an ambiguous signal.
+        $placeholders = implode(',', array_fill(0, count($messageIds), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT id, message_id, filename, mime_type, size_bytes FROM attachments
+             WHERE message_id IN ($placeholders) AND (disposition IS NULL OR disposition <> 'inline')
+             ORDER BY id"
+        );
+        $stmt->execute($messageIds);
+
+        $byMessage = [];
+        foreach ($stmt->fetchAll() as $r) {
+            $byMessage[(int) $r['message_id']][] = [
+                'id'          => (int) $r['id'],
+                'filename'    => $r['filename'],
+                'mimeType'    => $r['mime_type'],
+                'size'        => (int) $r['size_bytes'],
+                'previewable' => self::isPreviewableMime($r['mime_type']),
+            ];
+        }
+        return $byMessage;
+    }
 }

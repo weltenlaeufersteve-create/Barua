@@ -94,6 +94,15 @@ $jsMessages = [];
 foreach ($isDraftView ? [] : $rows as $row) {
     $jsMessages[(int) $row['id']] = mailRowData($row);
 }
+
+// One batched lookup for every visible row's attachments (not one query per row).
+$attachmentsByMessage = $isDraftView ? [] : MessageRepository::attachmentsForMessages(array_keys($jsMessages));
+foreach ($attachmentsByMessage as $mid => $atts) {
+    if (isset($jsMessages[$mid])) {
+        $jsMessages[$mid]['attachments'] = $atts;
+    }
+}
+$selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']] ?? []) : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -260,6 +269,24 @@ foreach ($isDraftView ? [] : $rows as $row) {
             <div class="reader__from-email"><?= htmlspecialchars($selected['sender_email']) ?> · <?= htmlspecialchars($selected['account_label']) ?></div>
           </div>
           <div class="reader__time"><?= htmlspecialchars(MessageRepository::fullTimeLabel($selected['date_sent'])) ?></div>
+        </div>
+        <div class="reader__attachments" id="reader-attachments"<?= empty($selectedAttachments) ? ' style="display:none"' : '' ?>>
+          <?php foreach ($selectedAttachments as $att): ?>
+            <div class="attachment-chip" data-att-id="<?= (int) $att['id'] ?>">
+              <?= sidebarIcon('attachment') ?>
+              <div class="attachment-chip__info">
+                <span class="attachment-chip__name"><?= htmlspecialchars($att['filename']) ?></span>
+                <span class="attachment-chip__size"><?= htmlspecialchars(formatBytes($att['size'])) ?></span>
+              </div>
+              <button type="button" class="attachment-chip__more" title="More"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+              <div class="attachment-chip__menu">
+                <a class="attachment-chip__menu-item" href="/attachments/<?= (int) $att['id'] ?>">Download</a>
+                <?php if ($att['previewable']): ?>
+                  <a class="attachment-chip__menu-item" href="/attachments/<?= (int) $att['id'] ?>?preview=1" target="_blank" rel="noopener">Preview</a>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endforeach; ?>
         </div>
         <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
         <!-- Action bar sits above the mail body and is ALWAYS visible — plain-text mail
@@ -465,6 +492,43 @@ foreach ($isDraftView ? [] : $rows as $row) {
       });
     });
 
+    // Human file size, mirrors PHP's formatBytes() in helpers.php.
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+      return (Math.round(bytes / 1024 / 1024 * 10) / 10) + ' MB';
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    var ATTACHMENT_SVG = '<svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+    var MORE_DOTS_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>';
+    function renderReaderAttachments(list) {
+      var wrap = document.getElementById('reader-attachments');
+      if (!wrap) return;
+      if (!list || !list.length) {
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+        return;
+      }
+      wrap.innerHTML = list.map(function (att) {
+        var preview = att.previewable
+          ? '<a class="attachment-chip__menu-item" href="/attachments/' + att.id + '?preview=1" target="_blank" rel="noopener">Preview</a>'
+          : '';
+        return '<div class="attachment-chip" data-att-id="' + att.id + '">' + ATTACHMENT_SVG
+          + '<div class="attachment-chip__info">'
+          + '<span class="attachment-chip__name">' + escapeHtml(att.filename) + '</span>'
+          + '<span class="attachment-chip__size">' + escapeHtml(formatSize(att.size)) + '</span>'
+          + '</div>'
+          + '<button type="button" class="attachment-chip__more" title="More">' + MORE_DOTS_SVG + '</button>'
+          + '<div class="attachment-chip__menu">'
+          + '<a class="attachment-chip__menu-item" href="/attachments/' + att.id + '">Download</a>'
+          + preview
+          + '</div></div>';
+      }).join('');
+      wrap.style.display = '';
+    }
+
     // Wire one message row: reader-open on click + pin/archive/trash actions.
     // Used for the initial rows AND for rows slid in later by the live stream.
     function wireMessageRow(row) {
@@ -507,6 +571,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
         meta.querySelector('.reader__from-name').textContent = msg.sender;
         meta.querySelector('.reader__from-email').textContent = msg.email + ' · ' + msg.accountLabel;
         meta.querySelector('.reader__time').textContent = msg.fullTime;
+        renderReaderAttachments(msg.attachments);
 
         document.body.setAttribute('data-mobile-view', 'reader');
       });
@@ -558,6 +623,38 @@ foreach ($isDraftView ? [] : $rows as $row) {
         document.body.setAttribute('data-mobile-view', 'list');
       });
     });
+
+    // Attachment chips: ⋮ opens Download/Preview, chip body is a click-to-download
+    // shortcut. Delegated on the wrapper since chips are replaced via innerHTML on every
+    // message switch — per-chip listeners would be lost, delegation survives it.
+    var attWrap = document.getElementById('reader-attachments');
+    if (attWrap) {
+      function closeAttachmentMenus() {
+        attWrap.querySelectorAll('.attachment-chip.is-menu-open').forEach(function (c) {
+          c.classList.remove('is-menu-open');
+        });
+      }
+      attWrap.addEventListener('click', function (e) {
+        var chip = e.target.closest('.attachment-chip');
+        if (!chip) return;
+        var moreBtn = e.target.closest('.attachment-chip__more');
+        if (moreBtn) {
+          e.stopPropagation();
+          var wasOpen = chip.classList.contains('is-menu-open');
+          closeAttachmentMenus();
+          if (!wasOpen) chip.classList.add('is-menu-open');
+          return;
+        }
+        if (e.target.closest('.attachment-chip__menu')) {
+          return; // Download/Preview link — let it navigate normally
+        }
+        window.location.href = '/attachments/' + chip.dataset.attId;
+      });
+      document.addEventListener('click', closeAttachmentMenus);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeAttachmentMenus();
+      });
+    }
 
     // Reader pin: same action as the row icon, and both stay in step.
     var readerPinBtn = document.getElementById('reader-pin');

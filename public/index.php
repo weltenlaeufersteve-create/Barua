@@ -115,16 +115,17 @@ if ($path === '/api/stream' && $method === 'GET') {
     };
 
     // Only rows newer than the client's cursor (genuinely new messages get higher ids).
-    $newRows = [];
-    foreach ($rows as $row) {
-        if ((int) $row['id'] > $after) {
-            $newRows[] = [
-                'id'   => (int) $row['id'],
-                'html' => renderMailRow($row, false, false),
-                'data' => mailRowData($row),
-            ];
-        }
-    }
+    $freshRows = array_values(array_filter($rows, fn($row) => (int) $row['id'] > $after));
+    $attByMsg = $R::attachmentsForMessages(array_column($freshRows, 'id'));
+    $newRows = array_map(function ($row) use ($attByMsg) {
+        $data = mailRowData($row);
+        $data['attachments'] = $attByMsg[(int) $row['id']] ?? [];
+        return [
+            'id'   => (int) $row['id'],
+            'html' => renderMailRow($row, false, false),
+            'data' => $data,
+        ];
+    }, $freshRows);
 
     echo json_encode([
         'ok'     => true,
@@ -196,6 +197,48 @@ if (preg_match('#^/messages/(\d+)/html$#', $path, $m) && $method === 'GET') {
     header('Content-Security-Policy: ' . \Barua\Mail\HtmlMailRenderer::csp($remote));
     header('X-Content-Type-Options: nosniff');
     echo \Barua\Mail\HtmlMailRenderer::document($html, $remote, $dark);
+    return;
+}
+
+if (preg_match('#^/attachments/(\d+)$#', $path, $m) && $method === 'GET') {
+    $stmt = \Barua\Database::connection()->prepare('SELECT * FROM attachments WHERE id = ?');
+    $stmt->execute([(int) $m[1]]);
+    $att = $stmt->fetch();
+    if (!$att) {
+        http_response_code(404);
+        echo 'Not found.';
+        return;
+    }
+
+    // storage_path is always our own generated "{message id}/{n}-{name}" pattern, never
+    // attacker input, but resolve + confirm containment anyway before touching the disk.
+    $root = realpath(__DIR__ . '/../storage/attachments');
+    $full = $root !== false ? realpath($root . '/' . $att['storage_path']) : false;
+    if ($full === false || $root === false || strpos($full, $root) !== 0 || !is_file($full)) {
+        http_response_code(404);
+        echo 'Not found.';
+        return;
+    }
+
+    // Attachments are attacker-controlled content (a mail's sender chooses them). Default
+    // is always a forced download, never an inline render — an HTML or SVG "attachment"
+    // opened inline would execute in this origin and could read the session/CSRF token.
+    // Preview ("Open in Browser") is the one deliberate exception, and only for a narrow,
+    // server-enforced allowlist (images + PDF) — the client asking for it is not enough
+    // on its own; isPreviewableMime() is the real gate below.
+    $wantsPreview = ($_GET['preview'] ?? '') === '1';
+    $canPreview = $wantsPreview && \Barua\Mail\MessageRepository::isPreviewableMime($att['mime_type']);
+
+    // RFC 6266: an ASCII-safe filename= fallback plus a UTF-8 filename*= for accents/umlauts.
+    $rawName = str_replace(["\r", "\n", '"'], '', $att['filename']);
+    $asciiName = preg_replace('/[^\x20-\x7E]/', '_', $rawName);
+    header('Content-Type: ' . ($att['mime_type'] ?: 'application/octet-stream'));
+    header('Content-Length: ' . filesize($full));
+    header('Content-Disposition: ' . ($canPreview ? 'inline' : 'attachment')
+        . '; filename="' . $asciiName . '"; filename*=UTF-8\'\'' . rawurlencode($rawName));
+    header('X-Content-Type-Options: nosniff');
+    header("Content-Security-Policy: default-src 'none'");
+    readfile($full);
     return;
 }
 
