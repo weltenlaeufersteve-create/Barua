@@ -498,34 +498,65 @@
 .pill { display: inline-flex; align-items: center; gap: 7px; }
 .pill .sidebar__icon { width: 15px; height: 15px; color: inherit; }
 
+/* Drawer scrim and filter button exist only in the mobile layout. */
+.sidebar-scrim { display: none; }
+.filter-fab { display: none; }
+
 /* ---------- Mobile ---------- */
 /* Below 900px: collapse to one visible column at a time, driven by
    body[data-mobile-view] ("sidebar" | "list" | "reader"), set by app.js. */
 @media (max-width: 900px) {
   .app { position: relative; }
 
-  .sidebar,
   .mail-list-col,
   .reader-col {
     width: 100%;
     flex-shrink: 1;
   }
 
-  .sidebar, .mail-list-col, .reader-col { display: none; }
+  .mail-list-col, .reader-col { display: none; }
 
-  body[data-mobile-view="sidebar"] .sidebar { display: flex; }
+  /* List and reader still swap; the sidebar is a drawer over them (below). */
+  body[data-mobile-view="sidebar"] .mail-list-col { display: flex; }
   body[data-mobile-view="list"] .mail-list-col { display: flex; }
   body[data-mobile-view="reader"] .reader-col { display: flex; }
+
+  /* ---- Sidebar as a slide-in drawer, keeping its own width ---- */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 60;
+    display: flex;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 2px 0 18px rgba(0, 0, 0, 0.28);
+  }
+  body[data-mobile-view="sidebar"] .sidebar { transform: translateX(0); }
+
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  body[data-mobile-view="sidebar"] .sidebar-scrim { opacity: 1; pointer-events: auto; }
 
   .mobile-back {
     display: none;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     padding: 14px 16px 0;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--text-secondary);
     cursor: pointer;
   }
+  .mobile-back .sidebar__icon { width: 17px; height: 17px; color: inherit; }
 
   body[data-mobile-view="sidebar"] .sidebar .mobile-back,
   body[data-mobile-view="list"] .mail-list-col .mobile-back,
@@ -534,6 +565,74 @@
   }
 
   .mail-list__header .icon-btn.mobile-menu { display: flex; }
+
+  /* ---- Filter button + pop-out stack (replaces the pill row on mobile) ---- */
+  .filter-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 18px;
+    bottom: 22px;
+    z-index: 45;
+    width: 56px;
+    height: 56px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-text);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+    cursor: pointer;
+  }
+  .filter-fab .sidebar__icon { width: 24px; height: 24px; color: inherit; }
+  body[data-mobile-view="reader"] .filter-fab,
+  body[data-mobile-view="sidebar"] .filter-fab { display: none; }
+
+  /* The pill row becomes a stack anchored above the button. */
+  .filter-pills {
+    position: fixed;
+    right: 18px;
+    bottom: 88px;
+    z-index: 46;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 0;
+    display: none;
+  }
+  .filter-pills.is-open { display: flex; }
+  .filter-pill {
+    padding: 11px 18px;
+    font-size: 15px;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    background: var(--list-bg);
+    border: 1px solid var(--border);
+  }
+  .filter-pill .sidebar__icon { width: 17px; height: 17px; }
+  .filter-pill__count { font-size: 13px; }
+  .filter-pill.is-active { border-color: transparent; }
+
+  /* Keep the last message clear of the floating filter button. */
+  .mail-list__scroll { padding-bottom: 92px; }
+
+  /* ---- Bigger type: the mobile text was simply too small ---- */
+  .mail-list__title { font-size: 19px; }
+  .mail-list__subtitle { font-size: 13px; }
+  .mail-row__sender { font-size: 15.5px; }
+  .mail-row__subject { font-size: 15px; }
+  .mail-row__preview { font-size: 14px; }
+  .mail-row__time { font-size: 13px; }
+  .mail-list__date-group { font-size: 12.5px; }
+  .sidebar__item { font-size: 15px; }
+  .sidebar__count { font-size: 13px; }
+  .sidebar__section { font-size: 12px; }
+  .reader__subject { font-size: 21px; }
+  .reader__from-name { font-size: 15px; }
+  .reader__from-email { font-size: 13.5px; }
+  .reader__time { font-size: 13.5px; }
+  .reader__body { font-size: 16px; }
+  .pill { font-size: 14.5px; padding: 10px 18px; }
 }
 
 @media (min-width: 901px) {

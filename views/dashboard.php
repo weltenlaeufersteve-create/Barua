@@ -111,10 +111,12 @@ foreach ($isDraftView ? [] : $rows as $row) {
 </head>
 <body data-mobile-view="list">
   <div class="app">
+    <!-- Dims the app behind the mobile sidebar drawer; tap to close. -->
+    <div class="sidebar-scrim" id="sidebar-scrim" data-go="list"></div>
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar__scroll">
-      <div class="mobile-back" data-go="list">‹ Inbox</div>
+      <div class="mobile-back" data-go="list"><?= sidebarIcon('back') ?> Inbox</div>
       <div class="sidebar__title">Barua</div>
 
       <a href="/" class="sidebar__item<?= $activeAccount === null ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count" id="inbox-count"><?= $totalUnread ?: '' ?></span></a>
@@ -188,12 +190,15 @@ foreach ($isDraftView ? [] : $rows as $row) {
             'notifications' => MessageRepository::groupUnread('notification', $activeAccountId),
         ];
       ?>
-      <div class="filter-pills">
+      <!-- Same markup serves both layouts: a wrapping row under the header on desktop,
+           and on mobile a stack that pops out of the filter button (bottom right). -->
+      <div class="filter-pills" id="filter-pills">
         <?php foreach ($filterPills as [$pv, $picon, $plabel]): ?>
           <?php $pcount = $pillCounts[$pv] ?? 0; ?>
           <a href="<?= htmlspecialchars($buildUrl($activeAccountId, $pv)) ?>" class="filter-pill<?= $view === $pv ? ' is-active' : '' ?>"><?= sidebarIcon($picon) ?> <?= $plabel ?><?php if ($pcount): ?><span class="filter-pill__count"><?= (int) $pcount ?></span><?php endif; ?></a>
         <?php endforeach; ?>
       </div>
+      <button type="button" class="filter-fab" id="filter-fab" aria-label="Filter"><?= sidebarIcon('filter') ?></button>
 
       <?php if (empty($rows)): ?>
         <div style="padding: 24px 20px; color: var(--text-tertiary); font-size: 13.5px;">
@@ -235,7 +240,7 @@ foreach ($isDraftView ? [] : $rows as $row) {
 
     <!-- Reader -->
     <div class="reader-col">
-      <div class="mobile-back" data-go="list">‹ Inbox</div>
+      <div class="mobile-back" data-go="list"><?= sidebarIcon('back') ?> Inbox</div>
       <?php if ($selected): ?>
       <div class="reader__content">
         <h1 class="reader__subject" id="reader-subject"><?= htmlspecialchars($selected['subject'] !== '' ? $selected['subject'] : '(no subject)') ?></h1>
@@ -552,6 +557,28 @@ foreach ($isDraftView ? [] : $rows as $row) {
             document.body.setAttribute('data-mobile-view', 'list');
           });
         });
+      });
+    }
+
+    // Mobile filter button: pops the filter pills out above it, so a view change is
+    // two thumb taps. The pills are the same elements the desktop row uses.
+    var filterFab = document.getElementById('filter-fab');
+    var filterPills = document.getElementById('filter-pills');
+    if (filterFab && filterPills) {
+      var FILTER_SVG = filterFab.innerHTML;
+      var CLOSE_SVG = '<svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      var setFilterOpen = function (open) {
+        filterPills.classList.toggle('is-open', open);
+        filterFab.innerHTML = open ? CLOSE_SVG : FILTER_SVG;
+      };
+      filterFab.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setFilterOpen(!filterPills.classList.contains('is-open'));
+      });
+      filterPills.addEventListener('click', function (e) { e.stopPropagation(); });
+      document.addEventListener('click', function () { setFilterOpen(false); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') setFilterOpen(false);
       });
     }
 
