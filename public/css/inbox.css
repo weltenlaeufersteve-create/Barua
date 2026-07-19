@@ -394,20 +394,21 @@
   display: flex;
   flex-direction: column;
   /* Full-bleed: stretch to the reader pane edges (counters .reader__content padding). */
-  margin: 20px -32px -28px;
-  /* Separator line above the email, matching the toolbar line below it. */
-  border-top: 1px solid var(--border);
+  margin: 0 -32px -28px;
 }
 
-/* Continuous full-width bar under the line: image notice on the left, icons opposite.
-   The email renders below it. Theme background blends with the reader surround. */
+/* Continuous full-width action bar: image notice on the left, icons opposite. Always
+   present (plain-text mail too); the mail body renders below it. Carries the separator
+   line and the full-bleed margins, so it owns the boundary above the body. */
 .reader__topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+  margin: 20px -32px 0; /* full-bleed to the reader pane edges */
   padding: 5px 14px 5px 32px; /* left aligns with the content column */
+  border-top: 1px solid var(--border);
   background: var(--reader-bg);
 }
 .reader__imgbar {

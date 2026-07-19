@@ -250,26 +250,29 @@ foreach ($isDraftView ? [] : $rows as $row) {
           <div class="reader__time"><?= htmlspecialchars(MessageRepository::fullTimeLabel($selected['date_sent'])) ?></div>
         </div>
         <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
+        <!-- Action bar sits above the mail body and is ALWAYS visible — plain-text mail
+             gets the same print / ⋮ actions as HTML mail. Only the pieces that are
+             HTML-specific (remote-image notice, light/dark toggle) hide themselves. -->
+        <div class="reader__topbar">
+          <div class="reader__imgbar" id="reader-imgbar"<?= $selHasHtml ? '' : ' style="display:none"' ?>>Remote images blocked · <span id="load-images">Load images</span></div>
+          <div class="reader__floatbar" id="reader-floatbar">
+            <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"<?= $selHasHtml ? '' : ' style="display:none"' ?>></button>
+            <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            <div class="reader__more">
+              <button type="button" class="icon-btn" id="reader-more" title="More actions"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+              <div class="reader__menu" id="reader-menu">
+                <button type="button" class="reader__menu-item" data-action="trash"><?= sidebarIcon('trash') ?> Delete</button>
+                <button type="button" class="reader__menu-item" data-action="archive"><?= sidebarIcon('archive') ?> Archive</button>
+                <button type="button" class="reader__menu-item" data-action="spam"><?= sidebarIcon('spam') ?> Mark as spam</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="reader__body" id="reader-body"<?= $selHasHtml ? ' style="display:none"' : '' ?>><?php
           $selBody = $selected['body_plain'] !== '' ? $selected['body_plain'] : \Barua\Mail\HtmlMailRenderer::toText($selected['body_html'] ?? '');
           echo htmlspecialchars($selBody !== '' ? $selBody : '(No text content)');
         ?></div>
         <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>
-          <div class="reader__topbar">
-            <div class="reader__imgbar" id="reader-imgbar">Remote images blocked · <span id="load-images">Load images</span></div>
-            <div class="reader__floatbar" id="reader-floatbar">
-              <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
-              <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-              <div class="reader__more">
-                <button type="button" class="icon-btn" id="reader-more" title="More actions"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
-                <div class="reader__menu" id="reader-menu">
-                  <button type="button" class="reader__menu-item" data-action="trash"><?= sidebarIcon('trash') ?> Delete</button>
-                  <button type="button" class="reader__menu-item" data-action="archive"><?= sidebarIcon('archive') ?> Archive</button>
-                  <button type="button" class="reader__menu-item" data-action="spam"><?= sidebarIcon('spam') ?> Mark as spam</button>
-                </div>
-              </div>
-            </div>
-          </div>
           <iframe class="reader__frame" id="reader-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
         </div>
       </div>
@@ -319,11 +322,15 @@ foreach ($isDraftView ? [] : $rows as $row) {
       var plain = document.getElementById('reader-body');
       var wrap = document.getElementById('reader-html');
       var imgbar = document.getElementById('reader-imgbar');
+      var themeBtn = document.getElementById('reader-theme');
       if (!wrap) return;
+      // The action bar itself stays visible either way; only the HTML-specific
+      // controls (remote-image notice, light/dark toggle) follow the body type.
+      if (imgbar) imgbar.style.display = msg.hasHtml ? '' : 'none';
+      if (themeBtn) themeBtn.style.display = msg.hasHtml ? '' : 'none';
       if (msg.hasHtml) {
         plain.style.display = 'none';
         wrap.style.display = '';
-        imgbar.style.display = '';
         readerImages = false;            // reset per message
         readerDark = themeMode === 'dark';
         updateThemeToggleIcon();
@@ -350,8 +357,24 @@ foreach ($isDraftView ? [] : $rows as $row) {
 
     var printBtn = document.getElementById('reader-print');
     if (printBtn) printBtn.addEventListener('click', function () {
-      var frame = document.getElementById('reader-frame');
-      try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {}
+      var wrap = document.getElementById('reader-html');
+      if (wrap && wrap.style.display !== 'none') {
+        var frame = document.getElementById('reader-frame');
+        try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {}
+        return;
+      }
+      // Plain-text mail: there's no visible iframe. The /html endpoint renders the
+      // plain body too, so print it from a throwaway hidden frame (always light —
+      // dark-inverted mail wastes ink on paper).
+      if (!currentMsgId) return;
+      var tmp = document.createElement('iframe');
+      tmp.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      tmp.src = '/messages/' + currentMsgId + '/html';
+      tmp.onload = function () {
+        try { tmp.contentWindow.focus(); tmp.contentWindow.print(); } catch (e) {}
+        setTimeout(function () { tmp.remove(); }, 2000);
+      };
+      document.body.appendChild(tmp);
     });
 
     // Initialise the frame for the pre-selected message (respecting the theme).
