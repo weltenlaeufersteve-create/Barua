@@ -195,7 +195,9 @@
    look, wherever you meet it. Never a solid fill: that reads as "selected destination",
    which is what an active TYPE pill is, and these are switches. */
 .filter-pill--toggle {
-  background: transparent;
+  /* Keeps the base pill's solid --reader-bg: what marks a selected TYPE is the accent
+     fill, not having a background at all. Transparent here made the mobile pop-out
+     unreadable, since the pills float over the message list. */
   border: 1px solid var(--border);
 }
 .filter-pill--toggle .switch {
