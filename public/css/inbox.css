@@ -167,12 +167,16 @@
   padding: 10px 14px;
   flex-shrink: 0;
 }
-/* Zero-height full-width item: takes a whole flex line to itself, pushing everything
-   after it onto the next row. Because it occupies a line, the row-gap would otherwise
-   count twice (above and below it) and the rows would sit twice as far apart as the
-   pills within a row — the negative margin cancels one of the two. Keep it in step with
-   the container's gap above. */
-.filter-pills__break { flex-basis: 100%; height: 0; margin-top: -8px; }
+/* Full-width row for the toggles. A wrapper rather than a zero-height break element:
+   a break would occupy a flex line of its own, so the row-gap counted twice and the
+   rows sat twice as far apart as the pills within a row. This way there is exactly one
+   gap between the type rows and the toggle row, matching the horizontal spacing. */
+.filter-pills__toggles {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 .filter-pill {
   flex-shrink: 0;
@@ -235,7 +239,10 @@
   .filter-pill { padding: 8px 14px; font-size: 13px; gap: 6px; }
   .filter-pill .sidebar__icon { width: 15px; height: 15px; }
   .filter-pill__count { font-size: 12px; }
-  .filter-pills__break { display: none; } /* the pop-out is already a vertical stack */
+  /* display:contents dissolves the wrapper, so the toggles become direct children of
+     the pop-out again — keeping the single vertical stack and the nth-last-child
+     stagger animation, which both count direct siblings. */
+  .filter-pills__toggles { display: contents; }
   /* Switch grows with the pill so it stays a comfortable thumb target. */
   .filter-pill--toggle .switch { width: 28px; height: 16px; margin-left: 3px; }
   .filter-pill--toggle .switch__knob { width: 12px; height: 12px; }

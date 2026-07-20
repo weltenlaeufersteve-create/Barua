@@ -238,13 +238,14 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           <?php $pcount = MessageRepository::inboxUnread($tVal, $filterPinned, $filterAttachments, $activeAccountId); ?>
           <a href="<?= htmlspecialchars($urlType($tVal)) ?>" class="filter-pill<?= $inInbox && $type === $tVal ? ' is-active' : '' ?>"><?= sidebarIcon($tIcon) ?> <?= $tLabel ?><?php if ($pcount): ?><span class="filter-pill__count"><?= (int) $pcount ?></span><?php endif; ?></a>
         <?php endforeach; ?>
-        <!-- Forces the toggles onto their own row on desktop, so the two axes read as two
-             groups instead of one long chain. Hidden on mobile, where the pop-out already
-             stacks everything vertically. -->
-        <span class="filter-pills__break" aria-hidden="true"></span>
-        <?php foreach ($toggleItems as [$fIcon, $fUrl, $fOn, $fLabel]): ?>
-          <a href="<?= htmlspecialchars($fUrl) ?>" class="filter-pill filter-pill--toggle<?= $fOn ? ' is-on' : '' ?>" role="switch" aria-checked="<?= $fOn ? 'true' : 'false' ?>"><?= sidebarIcon($fIcon) ?> <?= $fLabel ?><span class="switch" aria-hidden="true"><span class="switch__knob"></span></span></a>
-        <?php endforeach; ?>
+        <!-- Toggles get their own row on desktop, so the two axes read as two groups
+             instead of one long chain. On mobile this wrapper becomes display:contents,
+             so the pop-out keeps one flat vertical stack. -->
+        <div class="filter-pills__toggles">
+          <?php foreach ($toggleItems as [$fIcon, $fUrl, $fOn, $fLabel]): ?>
+            <a href="<?= htmlspecialchars($fUrl) ?>" class="filter-pill filter-pill--toggle<?= $fOn ? ' is-on' : '' ?>" role="switch" aria-checked="<?= $fOn ? 'true' : 'false' ?>"><?= sidebarIcon($fIcon) ?> <?= $fLabel ?><span class="switch" aria-hidden="true"><span class="switch__knob"></span></span></a>
+          <?php endforeach; ?>
+        </div>
       </div>
       <button type="button" class="filter-fab<?= $inInbox && ($filterPinned || $filterAttachments) ? ' has-filters' : '' ?>" id="filter-fab" aria-label="Filter"><?= sidebarIcon('filter') ?></button>
 
