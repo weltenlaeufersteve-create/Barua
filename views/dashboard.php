@@ -835,7 +835,23 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         e.stopPropagation();
         setFilterOpen(!filterPills.classList.contains('is-open'));
       });
-      filterPills.addEventListener('click', function (e) { e.stopPropagation(); });
+      // Both kinds of pill are links, so a tap reloads the page — "staying open" means
+      // surviving that reload. A FILTER is a switch you often flip twice in a row, so it
+      // reopens the pop-out; a TYPE is a destination, so it closes (no flag written).
+      var FILTERS_OPEN_KEY = 'barua_filters_open';
+      filterPills.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (e.target.closest('.filter-pill--toggle')) {
+          try { sessionStorage.setItem(FILTERS_OPEN_KEY, '1'); } catch (err) {}
+        }
+      });
+      try {
+        if (sessionStorage.getItem(FILTERS_OPEN_KEY) === '1') {
+          sessionStorage.removeItem(FILTERS_OPEN_KEY); // one reload only
+          setFilterOpen(true);
+        }
+      } catch (err) {}
+
       document.addEventListener('click', function () { setFilterOpen(false); });
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') setFilterOpen(false);
