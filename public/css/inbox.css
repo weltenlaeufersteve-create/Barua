@@ -191,23 +191,45 @@
 }
 .filter-pill.is-active .filter-pill__count { opacity: 0.8; }
 
-/* Toggle pills read as switches, not destinations: outlined when off, accent-outlined
-   and tinted when on — distinct from the solid fill a selected type gets. */
+/* Toggle pills carry the same switch as their sidebar counterparts — one control, one
+   look, wherever you meet it. Never a solid fill: that reads as "selected destination",
+   which is what an active TYPE pill is, and these are switches. */
 .filter-pill--toggle {
   background: transparent;
   border: 1px solid var(--border);
 }
-.filter-pill--toggle.is-on {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: transparent;
+.filter-pill--toggle .switch {
+  flex-shrink: 0;
+  width: 24px;
+  height: 14px;
+  margin-left: 2px;
+  border-radius: 999px;
+  background: var(--switch-track);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  transition: background 0.15s ease;
 }
+.filter-pill--toggle .switch__knob {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--switch-knob);
+  transition: transform 0.15s ease;
+}
+.filter-pill--toggle.is-on { border-color: var(--accent); color: var(--accent); }
 .filter-pill--toggle.is-on .sidebar__icon { color: var(--accent); }
+.filter-pill--toggle.is-on .switch { background: var(--accent); }
+.filter-pill--toggle.is-on .switch__knob { transform: translateX(10px); }
 /* Desktop pills stay compact; on mobile they grow back to a comfortable tap size. */
 @media (max-width: 900px) {
   .filter-pill { padding: 8px 14px; font-size: 13px; gap: 6px; }
   .filter-pill .sidebar__icon { width: 15px; height: 15px; }
   .filter-pill__count { font-size: 12px; }
+  /* Switch grows with the pill so it stays a comfortable thumb target. */
+  .filter-pill--toggle .switch { width: 28px; height: 16px; margin-left: 3px; }
+  .filter-pill--toggle .switch__knob { width: 12px; height: 12px; }
+  .filter-pill--toggle.is-on .switch__knob { transform: translateX(12px); }
 }
 
 .list-empty {
@@ -856,7 +878,9 @@
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
   .filter-fab,
-  .filter-pills .filter-pill {
+  .filter-pills .filter-pill,
+  .switch,
+  .switch__knob {
     transition: none !important;
   }
   .filter-pills.is-open .filter-pill { transition-delay: 0ms !important; }

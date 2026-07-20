@@ -239,7 +239,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           <a href="<?= htmlspecialchars($urlType($tVal)) ?>" class="filter-pill<?= $inInbox && $type === $tVal ? ' is-active' : '' ?>"><?= sidebarIcon($tIcon) ?> <?= $tLabel ?><?php if ($pcount): ?><span class="filter-pill__count"><?= (int) $pcount ?></span><?php endif; ?></a>
         <?php endforeach; ?>
         <?php foreach ($toggleItems as [$fIcon, $fUrl, $fOn, $fLabel]): ?>
-          <a href="<?= htmlspecialchars($fUrl) ?>" class="filter-pill filter-pill--toggle<?= $fOn ? ' is-on' : '' ?>" role="switch" aria-checked="<?= $fOn ? 'true' : 'false' ?>"><?= sidebarIcon($fIcon) ?> <?= $fLabel ?></a>
+          <a href="<?= htmlspecialchars($fUrl) ?>" class="filter-pill filter-pill--toggle<?= $fOn ? ' is-on' : '' ?>" role="switch" aria-checked="<?= $fOn ? 'true' : 'false' ?>"><?= sidebarIcon($fIcon) ?> <?= $fLabel ?><span class="switch" aria-hidden="true"><span class="switch__knob"></span></span></a>
         <?php endforeach; ?>
       </div>
       <button type="button" class="filter-fab<?= $inInbox && ($filterPinned || $filterAttachments) ? ' has-filters' : '' ?>" id="filter-fab" aria-label="Filter"><?= sidebarIcon('filter') ?></button>
