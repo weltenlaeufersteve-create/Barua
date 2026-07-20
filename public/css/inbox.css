@@ -167,6 +167,10 @@
   padding: 10px 14px;
   flex-shrink: 0;
 }
+/* Zero-height full-width item: takes a whole flex line to itself, pushing everything
+   after it onto the next row. */
+.filter-pills__break { flex-basis: 100%; height: 0; }
+
 .filter-pill {
   flex-shrink: 0;
   display: inline-flex;
@@ -228,6 +232,7 @@
   .filter-pill { padding: 8px 14px; font-size: 13px; gap: 6px; }
   .filter-pill .sidebar__icon { width: 15px; height: 15px; }
   .filter-pill__count { font-size: 12px; }
+  .filter-pills__break { display: none; } /* the pop-out is already a vertical stack */
   /* Switch grows with the pill so it stays a comfortable thumb target. */
   .filter-pill--toggle .switch { width: 28px; height: 16px; margin-left: 3px; }
   .filter-pill--toggle .switch__knob { width: 12px; height: 12px; }
