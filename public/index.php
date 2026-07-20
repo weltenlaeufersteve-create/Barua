@@ -50,7 +50,23 @@ if ($path === '/' || $path === '') {
     $username = $_SESSION['user'];
     $csrfToken = Auth::csrfToken();
     $activeAccountId = isset($_GET['account']) ? (int) $_GET['account'] : null;
-    $view = in_array($_GET['view'] ?? '', ['clean', 'sent', 'pinned', 'archive', 'trash', 'spam', 'drafts', 'newsletters', 'notifications', 'people', 'attachments'], true) ? $_GET['view'] : 'inbox';
+    $raw = (string) ($_GET['view'] ?? '');
+    // Old single-axis URLs (?view=clean|people|pinned|…) still work: fold them into the
+    // new axes so existing bookmarks don't silently land on the plain inbox.
+    $legacyType = ['clean' => 'clean', 'people' => 'people',
+                   'newsletters' => 'newsletter', 'notifications' => 'notification'];
+    $legacyFlag = ['pinned' => 'pinned', 'attachments' => 'attachments'];
+
+    // Folder axis — inbox by default, everything else is a real IMAP folder.
+    $view = in_array($raw, ['sent', 'archive', 'trash', 'spam', 'drafts'], true) ? $raw : 'inbox';
+    // Type axis: at most one, and only meaningful inside the inbox.
+    $type = in_array($_GET['type'] ?? '', ['clean', 'people', 'newsletter', 'notification'], true)
+        ? $_GET['type']
+        : ($legacyType[$raw] ?? '');
+    // Filter toggles: independent of each other and of the type.
+    $filterPinned = ($_GET['pinned'] ?? '') === '1' || ($legacyFlag[$raw] ?? '') === 'pinned';
+    $filterAttachments = ($_GET['attachments'] ?? '') === '1' || ($legacyFlag[$raw] ?? '') === 'attachments';
+
     require __DIR__ . '/../views/dashboard.php';
     return;
 }
@@ -96,24 +112,18 @@ if ($path === '/api/stream' && $method === 'GET') {
     header('Content-Type: application/json');
     require_once __DIR__ . '/../views/helpers.php';
 
-    $view = in_array($_GET['view'] ?? '', ['inbox', 'clean', 'pinned', 'archive', 'trash', 'spam', 'newsletters', 'notifications', 'people', 'attachments'], true)
-        ? $_GET['view'] : 'inbox';
+    // Same axes as the page render, so streamed-in rows match what the list is showing.
+    $view = in_array($_GET['view'] ?? '', ['archive', 'trash', 'spam'], true) ? $_GET['view'] : 'inbox';
+    $type = in_array($_GET['type'] ?? '', ['clean', 'people', 'newsletter', 'notification'], true) ? $_GET['type'] : '';
+    $sPinned = ($_GET['pinned'] ?? '') === '1';
+    $sAttach = ($_GET['attachments'] ?? '') === '1';
     $accountId = ($_GET['account'] ?? '') !== '' ? (int) $_GET['account'] : null;
     $after = (int) ($_GET['after'] ?? 0);
 
     $R = \Barua\Mail\MessageRepository::class;
-    $rows = match ($view) {
-        'clean'         => $R::cleanInboxMessages(60, $accountId),
-        'pinned'        => $R::pinnedMessages(60, $accountId),
-        'archive'       => $R::roleMessages('archive', 60, $accountId),
-        'trash'         => $R::roleMessages('trash', 60, $accountId),
-        'spam'          => $R::roleMessages('spam', 60, $accountId),
-        'newsletters'   => $R::groupMessages('newsletter', 60, $accountId),
-        'notifications' => $R::groupMessages('notification', 60, $accountId),
-        'people'        => $R::peopleMessages(60, $accountId),
-        'attachments'   => $R::attachmentMessages(60, $accountId),
-        default         => $R::unifiedInbox(60, $accountId),
-    };
+    $rows = $view === 'inbox'
+        ? $R::inboxMessages($type, $sPinned, $sAttach, 60, $accountId)
+        : $R::roleMessages($view, 60, $accountId);
 
     // Only rows newer than the client's cursor (genuinely new messages get higher ids).
     $freshRows = array_values(array_filter($rows, fn($row) => (int) $row['id'] > $after));

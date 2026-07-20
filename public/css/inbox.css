@@ -58,6 +58,32 @@
   color: var(--text-tertiary);
 }
 
+/* FILTER entries are switches, not destinations — they narrow whatever the TYPE above
+   already selected, so they show an on/off state instead of an active-page highlight. */
+.sidebar__toggle .switch {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  background: var(--switch-track);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  transition: background 0.15s ease;
+}
+.sidebar__toggle .switch__knob {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--switch-knob);
+  transition: transform 0.15s ease;
+}
+.sidebar__toggle.is-on .switch { background: var(--accent); }
+.sidebar__toggle.is-on .switch__knob { transform: translateX(13px); }
+.sidebar__toggle.is-on { color: var(--text-primary); }
+.sidebar__toggle.is-on .sidebar__icon { color: var(--accent); }
+
 .sidebar__icon {
   width: 16px;
   height: 16px;
@@ -164,12 +190,34 @@
   color: var(--accent-text);
 }
 .filter-pill.is-active .filter-pill__count { opacity: 0.8; }
+
+/* Toggle pills read as switches, not destinations: outlined when off, accent-outlined
+   and tinted when on — distinct from the solid fill a selected type gets. */
+.filter-pill--toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.filter-pill--toggle.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: transparent;
+}
+.filter-pill--toggle.is-on .sidebar__icon { color: var(--accent); }
 /* Desktop pills stay compact; on mobile they grow back to a comfortable tap size. */
 @media (max-width: 900px) {
   .filter-pill { padding: 8px 14px; font-size: 13px; gap: 6px; }
   .filter-pill .sidebar__icon { width: 15px; height: 15px; }
   .filter-pill__count { font-size: 12px; }
 }
+
+.list-empty {
+  padding: 24px 20px;
+  color: var(--text-tertiary);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.list-empty strong { color: var(--text-secondary); }
+.list-empty a { color: var(--accent); display: inline-block; margin-top: 8px; }
 
 /* Bottom notification strip — slides up in the theme accent for new mail / events. */
 .list-notify {
@@ -717,6 +765,19 @@
     cursor: pointer;
   }
   .filter-fab .sidebar__icon { width: 24px; height: 24px; color: inherit; }
+  /* A dot when filters are on: active narrowing must be visible without opening the
+     popover, or a short list looks broken rather than filtered. */
+  .filter-fab.has-filters::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--accent-text);
+    border: 2px solid var(--accent);
+  }
   body[data-mobile-view="reader"] .filter-fab,
   body[data-mobile-view="sidebar"] .filter-fab { display: none; }
 

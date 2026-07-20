@@ -6,27 +6,92 @@ use Barua\Database;
 
 class MessageRepository
 {
+    /** Mail carrying a real (non-inline) attachment. %s is the message-id expression. */
+    private const REAL_ATTACHMENT_EXISTS =
+        "EXISTS (SELECT 1 FROM attachments a WHERE a.message_id = %s
+                 AND (a.disposition IS NULL OR a.disposition <> 'inline'))";
+
     /**
-     * Newest non-archived messages. If $accountId is given, restrict to that account
-     * (single-mailbox view); otherwise the unified inbox across all accounts.
+     * The inbox view model, in one composable query: a base list (inbox, optionally scoped
+     * to one account) narrowed by at most one TYPE, then narrowed further by any number of
+     * independent FILTER toggles. Each axis only ever appends another AND, so a filter can
+     * never widen the list beyond what the type already narrowed it to.
+     *
+     *   type   — 'clean' | 'people' | 'newsletter' | 'notification' | '' (no narrowing)
+     *   pinned — only \Flagged mail
+     *   attach — only mail carrying a real (non-inline) attachment
+     *
+     * Everything is scoped to folder_role='inbox' on purpose: filters apply to the account
+     * inboxes, not Sent/Archive/Trash/Spam/Drafts. One scope for every axis is what keeps
+     * the combinations explainable.
+     *
+     * @return array{0: string, 1: array} SQL predicate (alias `m`) + bound params
      */
-    public static function unifiedInbox(int $limit = 100, ?int $accountId = null): array
+    private static function inboxPredicate(string $type, bool $pinned, bool $attach, ?int $accountId): array
     {
         $where = "m.folder_role = 'inbox' AND m.is_archived = 0";
         $params = [];
+
+        switch ($type) {
+            case 'clean':
+                // Bulk mail has a permanent home of its own, so it leaves the daily list.
+                // Pinned is NOT excluded (it used to be): now that Pinned is an independent
+                // toggle, excluding it here would contradict "Clean Inbox + Pinned on".
+                $where .= " AND m.group_type NOT IN ('newsletter', 'notification')";
+                break;
+            case 'people':
+                $where .= " AND (m.group_type = 'people'
+                                 OR (m.group_type = 'other'
+                                     AND LOWER(m.sender_email) IN (SELECT email FROM correspondents)))";
+                break;
+            case 'newsletter':
+            case 'notification':
+                $where .= ' AND m.group_type = ?';
+                $params[] = $type;
+                break;
+        }
+
+        if ($pinned) {
+            $where .= ' AND m.is_starred = 1';
+        }
+        if ($attach) {
+            $where .= ' AND ' . sprintf(self::REAL_ATTACHMENT_EXISTS, 'm.id');
+        }
         if ($accountId !== null) {
             $where .= ' AND m.account_id = ?';
             $params[] = $accountId;
         }
-        $sql = 'SELECT m.*, a.label AS account_label, a.colour AS account_colour
+
+        return [$where, $params];
+    }
+
+    public static function inboxMessages(string $type = '', bool $pinned = false, bool $attach = false, int $limit = 100, ?int $accountId = null): array
+    {
+        [$where, $params] = self::inboxPredicate($type, $pinned, $attach, $accountId);
+        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
                 FROM messages m
                 JOIN accounts a ON a.id = m.account_id
-                WHERE ' . $where . '
+                WHERE $where
                 ORDER BY m.date_sent DESC
-                LIMIT ' . (int) $limit;
+                LIMIT " . (int) $limit;
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Unread count for a type, honouring the active filter toggles — so a sidebar badge
+     * always answers "how many would I get if I clicked this", never a number from some
+     * other combination. Same predicate as the list, so the two can't disagree.
+     */
+    public static function inboxUnread(string $type = '', bool $pinned = false, bool $attach = false, ?int $accountId = null): int
+    {
+        [$where, $params] = self::inboxPredicate($type, $pinned, $attach, $accountId);
+        $stmt = Database::connection()->prepare(
+            "SELECT COUNT(*) FROM messages m WHERE $where AND m.is_read = 0"
+        );
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
     }
 
     /**
@@ -84,206 +149,6 @@ class MessageRepository
     {
         $where = 'folder_role = ?';
         $params = [$role];
-        if ($accountId !== null) {
-            $where .= ' AND account_id = ?';
-            $params[] = $accountId;
-        }
-        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn();
-    }
-
-    /** Smart-group view: inbox messages of one group_type (newsletter/notification/people). */
-    /**
-     * People = non-bulk mail from senders the user has WRITTEN TO (correspondents table,
-     * harvested from Sent folders). Computed dynamically: replying to someone new makes all
-     * their mail retroactively "People" — no reclassification pass needed.
-     */
-    /**
-     * "Clean Inbox" — the daily-driver filtered view: everything except bulk mail that
-     * already has a permanent home elsewhere (Newsletters/Notifications) and mail that's
-     * already flagged as handled (Pinned has its own one-click group, no need to repeat it
-     * here). Unclassified senders stay in — "not proven noise" wins until shown otherwise.
-     */
-    public static function cleanInboxMessages(int $limit = 100, ?int $accountId = null): array
-    {
-        $where = "m.folder_role = 'inbox' AND m.is_archived = 0 AND m.is_starred = 0
-                  AND m.group_type NOT IN ('newsletter', 'notification')";
-        $params = [];
-        if ($accountId !== null) {
-            $where .= ' AND m.account_id = ?';
-            $params[] = $accountId;
-        }
-        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
-                FROM messages m
-                JOIN accounts a ON a.id = m.account_id
-                WHERE $where
-                ORDER BY m.date_sent DESC
-                LIMIT " . (int) $limit;
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
-    public static function cleanInboxUnread(?int $accountId = null): int
-    {
-        $where = "folder_role = 'inbox' AND is_archived = 0 AND is_starred = 0 AND is_read = 0
-                  AND group_type NOT IN ('newsletter', 'notification')";
-        $params = [];
-        if ($accountId !== null) {
-            $where .= ' AND account_id = ?';
-            $params[] = $accountId;
-        }
-        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn();
-    }
-
-    /**
-     * Mail that actually carries a file. Spans inbox + archive like Pinned, not inbox
-     * alone: this is a "where was that invoice?" tool, and the invoice is usually already
-     * archived. Matches on the attachments table (excluding inline images) rather than the
-     * has_attachments flag — that flag counts a newsletter's social icons as attachments.
-     */
-    private const REAL_ATTACHMENT_EXISTS =
-        "EXISTS (SELECT 1 FROM attachments a WHERE a.message_id = %s
-                 AND (a.disposition IS NULL OR a.disposition <> 'inline'))";
-
-    public static function attachmentMessages(int $limit = 100, ?int $accountId = null): array
-    {
-        $where = "m.folder_role IN ('inbox','archive') AND m.is_archived = 0
-                  AND " . sprintf(self::REAL_ATTACHMENT_EXISTS, 'm.id');
-        $params = [];
-        if ($accountId !== null) {
-            $where .= ' AND m.account_id = ?';
-            $params[] = $accountId;
-        }
-        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
-                FROM messages m
-                JOIN accounts a ON a.id = m.account_id
-                WHERE $where
-                ORDER BY m.date_sent DESC
-                LIMIT " . (int) $limit;
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
-    /** Total, not unread — consistent with Pinned/Archive, where the count is the size. */
-    public static function attachmentCount(?int $accountId = null): int
-    {
-        $where = "folder_role IN ('inbox','archive') AND is_archived = 0
-                  AND " . sprintf(self::REAL_ATTACHMENT_EXISTS, 'messages.id');
-        $params = [];
-        if ($accountId !== null) {
-            $where .= ' AND account_id = ?';
-            $params[] = $accountId;
-        }
-        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn();
-    }
-
-    public static function peopleMessages(int $limit = 100, ?int $accountId = null): array
-    {
-        // Either explicitly filed here by hand, or the computed rule: not bulk mail and
-        // from someone the user has written to before.
-        $where = "m.folder_role = 'inbox' AND m.is_archived = 0
-                  AND (m.group_type = 'people'
-                       OR (m.group_type = 'other'
-                           AND LOWER(m.sender_email) IN (SELECT email FROM correspondents)))";
-        $params = [];
-        if ($accountId !== null) {
-            $where .= ' AND m.account_id = ?';
-            $params[] = $accountId;
-        }
-        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
-                FROM messages m
-                JOIN accounts a ON a.id = m.account_id
-                WHERE $where
-                ORDER BY m.date_sent DESC
-                LIMIT " . (int) $limit;
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
-    public static function peopleUnread(?int $accountId = null): int
-    {
-        $where = "folder_role = 'inbox' AND is_archived = 0 AND is_read = 0
-                  AND (group_type = 'people'
-                       OR (group_type = 'other'
-                           AND LOWER(sender_email) IN (SELECT email FROM correspondents)))";
-        $params = [];
-        if ($accountId !== null) {
-            $where .= ' AND account_id = ?';
-            $params[] = $accountId;
-        }
-        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn();
-    }
-
-    public static function groupMessages(string $type, int $limit = 100, ?int $accountId = null): array
-    {
-        $where = "m.folder_role = 'inbox' AND m.group_type = ? AND m.is_archived = 0";
-        $params = [$type];
-        if ($accountId !== null) {
-            $where .= ' AND m.account_id = ?';
-            $params[] = $accountId;
-        }
-        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
-                FROM messages m
-                JOIN accounts a ON a.id = m.account_id
-                WHERE $where
-                ORDER BY m.date_sent DESC
-                LIMIT " . (int) $limit;
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
-    /** Unread count for one smart group (sidebar badge). */
-    public static function groupUnread(string $type, ?int $accountId = null): int
-    {
-        $where = "folder_role = 'inbox' AND group_type = ? AND is_read = 0 AND is_archived = 0";
-        $params = [$type];
-        if ($accountId !== null) {
-            $where .= ' AND account_id = ?';
-            $params[] = $accountId;
-        }
-        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM messages WHERE $where");
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn();
-    }
-
-    /**
-     * Pinned = IMAP \Flagged (stored as is_starred). Spark-style naming — no stars in the UI.
-     * Includes archived pins (Spark's pin list spans folders); trash pins stay out.
-     */
-    public static function pinnedMessages(int $limit = 100, ?int $accountId = null): array
-    {
-        $where = "m.folder_role IN ('inbox','archive') AND m.is_starred = 1 AND m.is_archived = 0";
-        $params = [];
-        if ($accountId !== null) {
-            $where .= ' AND m.account_id = ?';
-            $params[] = $accountId;
-        }
-        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
-                FROM messages m
-                JOIN accounts a ON a.id = m.account_id
-                WHERE $where
-                ORDER BY m.date_sent DESC
-                LIMIT " . (int) $limit;
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
-    public static function pinnedCount(?int $accountId = null): int
-    {
-        $where = "folder_role IN ('inbox','archive') AND is_starred = 1 AND is_archived = 0";
-        $params = [];
         if ($accountId !== null) {
             $where .= ' AND account_id = ?';
             $params[] = $accountId;

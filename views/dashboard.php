@@ -4,7 +4,11 @@ use Barua\Mail\MessageRepository;
 require_once __DIR__ . '/helpers.php';
 
 $activeAccountId = $activeAccountId ?? null;
-$view = $view ?? 'inbox';
+$view = $view ?? 'inbox';                      // folder axis
+$type = $type ?? '';                           // type axis (inbox only)
+$filterPinned = $filterPinned ?? false;        // filter toggles (inbox only)
+$filterAttachments = $filterAttachments ?? false;
+$inInbox = $view === 'inbox';                  // where type + filters apply
 $accounts = MessageRepository::accountsWithUnread();
 $totalUnread = MessageRepository::totalUnread();
 $sentCount = MessageRepository::sentCount($activeAccountId);
@@ -17,28 +21,46 @@ if ($activeAccountId !== null) {
     }
 }
 
-// Build a sidebar URL for a given scope (account or null=all) + folder view.
-$buildUrl = function (?int $account, string $folderView): string {
+// One URL builder for all three axes: scope (account) × folder × type × filter toggles.
+// Only non-default values land in the query string, so the plain inbox stays a bare "/".
+$url = function (?int $account, string $folderView, string $typeVal, bool $pin, bool $att): string {
     $params = [];
-    if ($account !== null) { $params['account'] = $account; }
+    if ($account !== null)   { $params['account'] = $account; }
     if ($folderView !== 'inbox') { $params['view'] = $folderView; }
+    if ($typeVal !== '')     { $params['type'] = $typeVal; }
+    if ($pin)                { $params['pinned'] = 1; }
+    if ($att)                { $params['attachments'] = 1; }
     return '/' . (empty($params) ? '' : '?' . http_build_query($params));
 };
 
-// Folder view = scope (all / account) × folder (inbox / sent / pinned).
-$pinnedCount = MessageRepository::pinnedCount($activeAccountId);
-if ($view === 'clean') {
-    $rows = MessageRepository::cleanInboxMessages(100, $activeAccountId);
-    $listTitle = $activeAccount ? $activeAccount['label'] : 'Clean Inbox';
-    $listSubtitle = $activeAccount ? 'Clean Inbox' : 'All accounts';
-} elseif ($view === 'sent') {
+// Switching account keeps whatever narrowing is active; switching folder drops the
+// inbox-only axes, since type/filters don't apply to Sent/Archive/Trash/Spam/Drafts.
+$urlAccount = fn(?int $account) => $url($account, $view, $type, $filterPinned, $filterAttachments);
+$urlType    = fn(string $t) => $url($activeAccountId, 'inbox', $t, $filterPinned, $filterAttachments);
+$urlFolder  = fn(string $f) => $url($activeAccountId, $f, '', false, false);
+// A toggle flips its own axis and leaves everything else alone. From a folder view it
+// returns to the inbox, where filters have meaning.
+$urlPinned  = fn() => $url($activeAccountId, 'inbox', $inInbox ? $type : '', !$filterPinned, $filterAttachments);
+$urlAttach  = fn() => $url($activeAccountId, 'inbox', $inInbox ? $type : '', $filterPinned, !$filterAttachments);
+
+// Kept for the folder links further down, which still think in "view" terms.
+$buildUrl = fn(?int $account, string $folderView) => $folderView === 'inbox'
+    ? $url($account, 'inbox', $type, $filterPinned, $filterAttachments)
+    : $url($account, $folderView, '', false, false);
+
+// Human labels for the type axis, reused by the sidebar, the pills and the list header.
+$typeLabels = [
+    ''             => 'Inbox',
+    'clean'        => 'Clean Inbox',
+    'people'       => 'Conversations',
+    'newsletter'   => 'Newsletters',
+    'notification' => 'Notifications',
+];
+
+if ($view === 'sent') {
     $rows = MessageRepository::sentMessages(100, $activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Sent';
     $listSubtitle = $activeAccount ? 'Sent' : 'All accounts';
-} elseif ($view === 'pinned') {
-    $rows = MessageRepository::pinnedMessages(100, $activeAccountId);
-    $listTitle = $activeAccount ? $activeAccount['label'] : 'Pinned';
-    $listSubtitle = $activeAccount ? 'Pinned' : 'All accounts';
 } elseif ($view === 'archive' || $view === 'trash' || $view === 'spam') {
     $rows = MessageRepository::roleMessages($view, 100, $activeAccountId);
     $roleLabel = ucfirst($view);
@@ -48,24 +70,21 @@ if ($view === 'clean') {
     $rows = \Barua\Mail\DraftRepository::forDisplay($activeAccountId);
     $listTitle = $activeAccount ? $activeAccount['label'] : 'Drafts';
     $listSubtitle = $activeAccount ? 'Drafts' : 'All accounts';
-} elseif ($view === 'newsletters' || $view === 'notifications') {
-    $groupType = $view === 'newsletters' ? 'newsletter' : 'notification';
-    $rows = MessageRepository::groupMessages($groupType, 100, $activeAccountId);
-    $groupLabel = ucfirst($view);
-    $listTitle = $activeAccount ? $activeAccount['label'] : $groupLabel;
-    $listSubtitle = $activeAccount ? $groupLabel : 'All accounts';
-} elseif ($view === 'attachments') {
-    $rows = MessageRepository::attachmentMessages(100, $activeAccountId);
-    $listTitle = $activeAccount ? $activeAccount['label'] : 'Attachments';
-    $listSubtitle = $activeAccount ? 'Attachments' : 'All accounts';
-} elseif ($view === 'people') {
-    $rows = MessageRepository::peopleMessages(100, $activeAccountId);
-    $listTitle = $activeAccount ? $activeAccount['label'] : 'Conversations';
-    $listSubtitle = $activeAccount ? 'Conversations' : 'All accounts';
 } else {
-    $rows = MessageRepository::unifiedInbox(100, $activeAccountId);
-    $listTitle = $activeAccount ? $activeAccount['label'] : 'Inbox';
-    $listSubtitle = $activeAccount ? $activeAccount['email'] : 'Unified';
+    // Inbox: one query for base × type × filters.
+    $rows = MessageRepository::inboxMessages($type, $filterPinned, $filterAttachments, 100, $activeAccountId);
+    $listTitle = $activeAccount ? $activeAccount['label'] : $typeLabels[$type];
+    // Spell the active narrowing out in the subtitle — with combinable filters the list
+    // alone can't explain why it's short.
+    $activeBits = [];
+    if ($activeAccount) { $activeBits[] = $typeLabels[$type]; }
+    if ($filterPinned) { $activeBits[] = 'Pinned'; }
+    if ($filterAttachments) { $activeBits[] = 'Attachments'; }
+    if (empty($activeBits)) {
+        $listSubtitle = $activeAccount ? $activeAccount['email'] : 'Unified';
+    } else {
+        $listSubtitle = implode(' · ', $activeBits);
+    }
 }
 
 // Group rows by human date label, preserving date-desc order.
@@ -136,12 +155,12 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
       <div class="mobile-back" data-go="list"><?= sidebarIcon('back') ?> Inbox</div>
       <div class="sidebar__title">Barua</div>
 
-      <a href="/" class="sidebar__item<?= $activeAccount === null ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count" id="inbox-count"><?= $totalUnread ?: '' ?></span></a>
+      <a href="<?= htmlspecialchars($url(null, 'inbox', $type, $filterPinned, $filterAttachments)) ?>" class="sidebar__item<?= $activeAccount === null && $inInbox ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count" id="inbox-count"><?= $totalUnread ?: '' ?></span></a>
 
       <div class="sidebar__section-header">Accounts</div>
 
       <?php foreach ($accounts as $acc): ?>
-        <a href="<?= htmlspecialchars($buildUrl((int) $acc['id'], $view)) ?>" data-account="<?= (int) $acc['id'] ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
+        <a href="<?= htmlspecialchars($urlAccount((int) $acc['id'])) ?>" data-account="<?= (int) $acc['id'] ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
           <span class="account-avatar" style="background: <?= htmlspecialchars($acc['colour']) ?>"><?= htmlspecialchars(mb_strtoupper(mb_substr($acc['label'], 0, 1))) ?></span>
           <?= htmlspecialchars($acc['label']) ?>
           <?php if ((int) $acc['unread'] > 0): ?>
@@ -150,14 +169,33 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         </a>
       <?php endforeach; ?>
 
-      <div class="sidebar__section-header">Filter</div>
+      <?php
+        // TYPE narrows the base list — pick one. Counts honour the active filter toggles,
+        // so each badge answers "how many would I get if I clicked this".
+        $typeItems = [
+            ['clean',        'clean',         'Clean Inbox'],
+            ['people',       'people',        'Conversations'],
+            ['newsletter',   'newsletters',   'Newsletters'],
+            ['notification', 'notifications', 'Notifications'],
+        ];
+      ?>
+      <div class="sidebar__section-header">Type</div>
+      <?php foreach ($typeItems as [$tVal, $tIcon, $tLabel]): ?>
+        <a href="<?= htmlspecialchars($urlType($tVal)) ?>" class="sidebar__item<?= $inInbox && $type === $tVal ? ' is-active' : '' ?>"><?= sidebarIcon($tIcon) ?> <?= $tLabel ?> <span class="sidebar__count"><?= MessageRepository::inboxUnread($tVal, $filterPinned, $filterAttachments, $activeAccountId) ?: '' ?></span></a>
+      <?php endforeach; ?>
 
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'clean')) ?>" class="sidebar__item<?= $view === 'clean' ? ' is-active' : '' ?>"><?= sidebarIcon('clean') ?> Clean Inbox <span class="sidebar__count"><?= MessageRepository::cleanInboxUnread($activeAccountId) ?: '' ?></span></a>
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'pinned')) ?>" class="sidebar__item<?= $view === 'pinned' ? ' is-active' : '' ?>"><?= sidebarIcon('pinned') ?> Pinned <span class="sidebar__count" id="pinned-count"><?= $pinnedCount ?: '' ?></span></a>
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'people')) ?>" class="sidebar__item<?= $view === 'people' ? ' is-active' : '' ?>"><?= sidebarIcon('people') ?> Conversations <span class="sidebar__count"><?= MessageRepository::peopleUnread($activeAccountId) ?: '' ?></span></a>
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'newsletters')) ?>" class="sidebar__item<?= $view === 'newsletters' ? ' is-active' : '' ?>"><?= sidebarIcon('newsletters') ?> Newsletters <span class="sidebar__count"><?= MessageRepository::groupUnread('newsletter', $activeAccountId) ?: '' ?></span></a>
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'notifications')) ?>" class="sidebar__item<?= $view === 'notifications' ? ' is-active' : '' ?>"><?= sidebarIcon('notifications') ?> Notifications <span class="sidebar__count"><?= MessageRepository::groupUnread('notification', $activeAccountId) ?: '' ?></span></a>
-      <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'attachments')) ?>" class="sidebar__item<?= $view === 'attachments' ? ' is-active' : '' ?>"><?= sidebarIcon('attachment') ?> Attachments <span class="sidebar__count"><?= MessageRepository::attachmentCount($activeAccountId) ?: '' ?></span></a>
+      <?php
+        // FILTER narrows further — independent switches, combinable with each other and
+        // with any type. No counts here: a toggle only needs a visible on/off state.
+        $toggleItems = [
+            ['pinned',      $urlPinned(), $inInbox && $filterPinned,      'Pinned'],
+            ['attachment',  $urlAttach(), $inInbox && $filterAttachments, 'Attachments'],
+        ];
+      ?>
+      <div class="sidebar__section-header">Filter</div>
+      <?php foreach ($toggleItems as [$fIcon, $fUrl, $fOn, $fLabel]): ?>
+        <a href="<?= htmlspecialchars($fUrl) ?>" class="sidebar__item sidebar__toggle<?= $fOn ? ' is-on' : '' ?>" role="switch" aria-checked="<?= $fOn ? 'true' : 'false' ?>"><?= sidebarIcon($fIcon) ?> <?= $fLabel ?> <span class="switch" aria-hidden="true"><span class="switch__knob"></span></span></a>
+      <?php endforeach; ?>
 
       <div class="sidebar__section-header">Folder</div>
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'drafts')) ?>" class="sidebar__item<?= $view === 'drafts' ? ' is-active' : '' ?>"><?= sidebarIcon('drafts') ?> Drafts <span class="sidebar__count" id="drafts-count"><?= \Barua\Mail\DraftRepository::count($activeAccountId) ?: '' ?></span></a>
@@ -191,60 +229,46 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         </div>
       </div>
 
-      <?php
-        // Quick filter pills (mobile only) — filter without opening the sidebar.
-        $filterPills = [
-            ['inbox',        'inbox',        'Inbox'],
-            ['clean',        'clean',        'Clean Inbox'],
-            ['pinned',       'pinned',       'Pinned'],
-            ['people',       'people',       'Conversations'],
-            ['newsletters',  'newsletters',  'Newsletters'],
-            ['notifications','notifications','Notifications'],
-            ['attachments',  'attachment',   'Attachments'],
-        ];
-        // Same count sources as the sidebar, so the numbers always agree.
-        $pillCounts = [
-            'inbox'         => $totalUnread,
-            'clean'         => MessageRepository::cleanInboxUnread($activeAccountId),
-            'pinned'        => $pinnedCount,
-            'people'        => MessageRepository::peopleUnread($activeAccountId),
-            'newsletters'   => MessageRepository::groupUnread('newsletter', $activeAccountId),
-            'notifications' => MessageRepository::groupUnread('notification', $activeAccountId),
-            'attachments'   => MessageRepository::attachmentCount($activeAccountId),
-        ];
-      ?>
-      <!-- Same markup serves both layouts: a wrapping row under the header on desktop,
-           and on mobile a stack that pops out of the filter button (bottom right). -->
+      <!-- Same markup serves both layouts: a wrapping row under the header on desktop, and
+           on mobile a stack that pops out of the filter button. Mirrors the sidebar's two
+           axes — the types select one at a time, the toggles stack on top. -->
       <div class="filter-pills" id="filter-pills">
-        <?php foreach ($filterPills as [$pv, $picon, $plabel]): ?>
-          <?php $pcount = $pillCounts[$pv] ?? 0; ?>
-          <a href="<?= htmlspecialchars($buildUrl($activeAccountId, $pv)) ?>" class="filter-pill<?= $view === $pv ? ' is-active' : '' ?>"><?= sidebarIcon($picon) ?> <?= $plabel ?><?php if ($pcount): ?><span class="filter-pill__count"><?= (int) $pcount ?></span><?php endif; ?></a>
+        <a href="<?= htmlspecialchars($urlType('')) ?>" class="filter-pill<?= $inInbox && $type === '' ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox<?php if ($totalUnread): ?><span class="filter-pill__count"><?= (int) $totalUnread ?></span><?php endif; ?></a>
+        <?php foreach ($typeItems as [$tVal, $tIcon, $tLabel]): ?>
+          <?php $pcount = MessageRepository::inboxUnread($tVal, $filterPinned, $filterAttachments, $activeAccountId); ?>
+          <a href="<?= htmlspecialchars($urlType($tVal)) ?>" class="filter-pill<?= $inInbox && $type === $tVal ? ' is-active' : '' ?>"><?= sidebarIcon($tIcon) ?> <?= $tLabel ?><?php if ($pcount): ?><span class="filter-pill__count"><?= (int) $pcount ?></span><?php endif; ?></a>
+        <?php endforeach; ?>
+        <?php foreach ($toggleItems as [$fIcon, $fUrl, $fOn, $fLabel]): ?>
+          <a href="<?= htmlspecialchars($fUrl) ?>" class="filter-pill filter-pill--toggle<?= $fOn ? ' is-on' : '' ?>" role="switch" aria-checked="<?= $fOn ? 'true' : 'false' ?>"><?= sidebarIcon($fIcon) ?> <?= $fLabel ?></a>
         <?php endforeach; ?>
       </div>
-      <button type="button" class="filter-fab" id="filter-fab" aria-label="Filter"><?= sidebarIcon('filter') ?></button>
+      <button type="button" class="filter-fab<?= $inInbox && ($filterPinned || $filterAttachments) ? ' has-filters' : '' ?>" id="filter-fab" aria-label="Filter"><?= sidebarIcon('filter') ?></button>
 
       <?php if (empty($rows)): ?>
-        <div style="padding: 24px 20px; color: var(--text-tertiary); font-size: 13.5px;">
+        <div class="list-empty">
           <?php if ($view === 'sent'): ?>
             No sent messages yet.
-          <?php elseif ($view === 'pinned'): ?>
-            No pinned messages. Pin mail on any device (IMAP flag) and it shows up here.
           <?php elseif ($view === 'archive'): ?>
             Nothing archived yet (within the sync window).
           <?php elseif ($view === 'trash'): ?>
             Trash is empty (within the sync window).
+          <?php elseif ($view === 'spam'): ?>
+            No spam (within the sync window).
           <?php elseif ($view === 'drafts'): ?>
             No drafts. Start writing in the composer — it autosaves here.
-          <?php elseif ($view === 'people'): ?>
-            No conversations yet. Reply to someone once and their mail shows up here.
-          <?php elseif ($view === 'newsletters'): ?>
-            No newsletters detected (within the synced range).
-          <?php elseif ($view === 'notifications'): ?>
-            No notifications detected (within the synced range).
-          <?php elseif ($view === 'attachments'): ?>
-            No mail with attachments (within the synced range).
-          <?php else: ?>
+          <?php elseif ($type === '' && !$filterPinned && !$filterAttachments): ?>
             No messages yet. Click ⟳ to sync your accounts.
+          <?php else: ?>
+            <?php
+              // With combinable narrowing, an empty list needs to name what emptied it —
+              // otherwise it reads as a bug rather than a filter.
+              $bits = [];
+              if ($type !== '') { $bits[] = $typeLabels[$type]; }
+              if ($filterPinned) { $bits[] = 'Pinned'; }
+              if ($filterAttachments) { $bits[] = 'Attachments'; }
+            ?>
+            Nothing matches <strong><?= htmlspecialchars(implode(' + ', $bits)) ?></strong>.
+            <a href="<?= htmlspecialchars($url($activeAccountId, 'inbox', '', false, false)) ?>">Clear all filters</a>
           <?php endif; ?>
         </div>
       <?php endif; ?>
@@ -492,7 +516,10 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
 
     // Row actions: pin toggle (IMAP \Flagged), archive, trash — server write + cache + UI.
     var mainCsrf = <?= json_encode($csrfToken) ?>;
-    var currentView = <?= json_encode($view) ?>;
+    var currentView = <?= json_encode($view) ?>;              // folder axis
+    var currentType = <?= json_encode($type) ?>;              // type axis
+    var filterPinnedOn = <?= $filterPinned ? 'true' : 'false' ?>;
+    var filterAttachOn = <?= $filterAttachments ? 'true' : 'false' ?>;
     var currentAccount = <?= $activeAccountId !== null ? (int) $activeAccountId : 'null' ?>;
     var isDraftView = <?= $isDraftView ? 'true' : 'false' ?>;
 
@@ -640,7 +667,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           if (messages[id]) messages[id].pinned = nowPinned;
           // Keep the reader's pin in step when it's the same message.
           if (parseInt(id, 10) === currentMsgId) setReaderPin(nowPinned);
-          if (!nowPinned && currentView === 'pinned') removeRow(row);
+          if (!nowPinned && filterPinnedOn) removeRow(row); // no longer matches the active filter
         });
       });
 
@@ -733,7 +760,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         var rowPin = document.querySelector('.mail-row[data-msg="' + msgId + '"] .row-action--pin');
         if (rowPin) rowPin.classList.toggle('is-pinned', nowPinned);
         var row = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
-        if (!nowPinned && currentView === 'pinned' && row) removeRow(row);
+        if (!nowPinned && filterPinnedOn && row) removeRow(row);
       });
     });
 
@@ -752,7 +779,6 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
       });
       // Which view each group is shown in, so we know whether the mail still belongs
       // in the list we're looking at after being refiled.
-      var GROUP_VIEW = { people: 'people', newsletter: 'newsletters', notification: 'notifications' };
 
       moreMenu.querySelectorAll('.reader__menu-item').forEach(function (item) {
         item.addEventListener('click', function () {
@@ -770,10 +796,12 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           if (item.dataset.group) {
             msgAction(msgId, 'group', { group: item.dataset.group }, function (res) {
               if (!res.ok) return;
-              // Only drop the row when the current list filters by group and this
-              // mail no longer matches it; in the inbox it simply stays put.
-              if (GROUP_VIEW[item.dataset.group] !== currentView
-                  && (currentView === 'people' || currentView === 'newsletters' || currentView === 'notifications')) {
+              // Drop the row only when a type is active and the mail no longer matches
+              // it. Clean Inbox counts too: moving a mail to Newsletters/Notifications
+              // takes it out of that list. With no type active it simply stays put.
+              var stillFits = item.dataset.group === currentType
+                || (currentType === 'clean' && item.dataset.group === 'people');
+              if (currentType !== '' && !stillFits) {
                 var gRow = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
                 if (gRow) removeRow(gRow);
                 document.body.setAttribute('data-mobile-view', 'list');
@@ -907,7 +935,11 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
 
     function pollStream() {
       if (isDraftView || document.hidden) return;
+      // Carry every axis, or streamed-in rows wouldn't match the narrowing on screen.
       var url = '/api/stream?view=' + encodeURIComponent(currentView) +
+                '&type=' + encodeURIComponent(currentType) +
+                (filterPinnedOn ? '&pinned=1' : '') +
+                (filterAttachOn ? '&attachments=1' : '') +
                 '&after=' + streamCursor() +
                 (currentAccount !== null ? '&account=' + currentAccount : '');
       fetch(url).then(function (r) { return r.json(); }).then(function (res) {
