@@ -52,7 +52,7 @@ $buildUrl = fn(?int $account, string $folderView) => $folderView === 'inbox'
 $typeLabels = [
     ''             => 'Inbox',
     'clean'        => 'Clean Inbox',
-    'people'       => 'Conversations',
+    'people'       => 'Correspondents',
     'newsletter'   => 'Newsletters',
     'notification' => 'Notifications',
 ];
@@ -174,7 +174,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         // so each badge answers "how many would I get if I clicked this".
         $typeItems = [
             ['clean',        'clean',         'Clean Inbox'],
-            ['people',       'people',        'Conversations'],
+            ['people',       'people',        'Correspondents'],
             ['newsletter',   'newsletters',   'Newsletters'],
             ['notification', 'notifications', 'Notifications'],
         ];
@@ -332,7 +332,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
                 <button type="button" class="reader__menu-item" data-action="spam"><?= sidebarIcon('spam') ?> Mark as spam</button>
                 <div class="reader__menu-sep"></div>
                 <div class="reader__menu-label">Move to group</div>
-                <button type="button" class="reader__menu-item" data-group="people"><?= sidebarIcon('people') ?> Conversations</button>
+                <button type="button" class="reader__menu-item" data-group="people"><?= sidebarIcon('people') ?> Correspondents</button>
                 <button type="button" class="reader__menu-item" data-group="newsletter"><?= sidebarIcon('newsletters') ?> Newsletters</button>
                 <button type="button" class="reader__menu-item" data-group="notification"><?= sidebarIcon('notifications') ?> Notifications</button>
               </div>
