@@ -463,6 +463,10 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         plain.classList.toggle('is-mail-dark', readerDark);
         plain.classList.toggle('is-mail-light', !readerDark);
       }
+      // The HTML mail frame needs its own dark backdrop in dark mode — the mail renders
+      // transparent+inverted over it, so this is what makes it dark in a light theme too.
+      var frame = document.getElementById('reader-frame');
+      if (frame) frame.classList.toggle('is-mail-dark', readerDark);
       if (currentHasHtml) loadReaderFrame();
     }
 

@@ -772,8 +772,13 @@
   height: 300px;
   border: none;
   border-radius: 0;
-  background: transparent; /* dark mail lets the theme --reader-bg show through */
+  /* The frame carries the mail surface itself, not the reader background behind it: a
+     dark-rendered mail (transparent + inverted) needs a real dark backdrop even in a LIGHT
+     app theme, otherwise the light --reader-bg showed through and the "dark" mail stayed
+     white. --mail-dark/light-bg are the family's dark/light surface in EVERY theme. */
+  background: var(--mail-light-bg);
 }
+.reader__frame.is-mail-dark { background: var(--mail-dark-bg); }
 
 .reader__toolbar {
   display: flex;
