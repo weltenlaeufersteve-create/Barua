@@ -210,6 +210,25 @@
   }
   .tint-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px var(--border); }
 
+  .set-log { display: flex; flex-direction: column; gap: 6px; }
+  .set-log__row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--hover-bg);
+  }
+  .set-log__badge {
+    flex-shrink: 0; font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 999px;
+    background: var(--selected-bg); color: var(--text-secondary);
+  }
+  .set-log__badge--success { background: rgba(60,160,90,0.18); color: #3ca05a; }
+  .set-log__badge--fail, .set-log__badge--blocked { background: rgba(217,83,79,0.16); color: var(--danger, #d9534f); }
+  .set-log__main { min-width: 0; flex: 1; }
+  .set-log__top { display: flex; justify-content: space-between; gap: 10px; }
+  .set-log__time { font-size: 12.5px; color: var(--text-primary); }
+  .set-log__ip { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .set-log__meta { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   .set-about__block { margin-bottom: 22px; }
   .set-about__label {
     font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
@@ -260,6 +279,7 @@
       <div class="settings-tab" data-tab="appearance">Appearance</div>
       <div class="settings-tab" data-tab="signatures">Signatures</div>
       <div class="settings-tab" data-tab="general">General</div>
+      <div class="settings-tab" data-tab="security">Security</div>
       <div class="settings-tab" data-tab="about">About</div>
     </div>
 
@@ -488,6 +508,29 @@
         <p class="set-panel-desc">App-wide preferences and account security. More options are on the way.</p>
       </div>
       <p style="color: var(--text-tertiary);">Coming soon.</p>
+    </div>
+
+    <div class="settings-panel" data-panel="security">
+      <div class="set-panel-head">
+        <h3 class="set-panel-title">Security</h3>
+        <p class="set-panel-desc">Every sign-in attempt to Barua — successful, failed, or blocked by rate-limiting — with when, where and what.</p>
+      </div>
+      <?php $loginLog = \Barua\Auth\Auth::recentLoginAttempts(100); ?>
+      <?php if (empty($loginLog)): ?>
+        <p style="color: var(--text-tertiary);">No sign-in attempts recorded yet.</p>
+      <?php else: ?>
+        <div class="set-log">
+          <?php foreach ($loginLog as $a): ?>
+            <div class="set-log__row">
+              <span class="set-log__badge set-log__badge--<?= htmlspecialchars($a['outcome']) ?>"><?= htmlspecialchars(ucfirst($a['outcome'])) ?></span>
+              <div class="set-log__main">
+                <div class="set-log__top"><span class="set-log__time"><?= htmlspecialchars($a['time']) ?></span><span class="set-log__ip"><?= htmlspecialchars($a['xff'] !== '' ? $a['xff'] : $a['ip']) ?></span></div>
+                <div class="set-log__meta">user <strong><?= htmlspecialchars($a['user']) ?></strong> · <?= htmlspecialchars($a['ua'] !== '' ? $a['ua'] : 'unknown device') ?></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     </div>
 
     <div class="settings-panel" data-panel="about">

@@ -131,4 +131,34 @@ class Auth
 
         @file_put_contents($dir . '/auth.log', $line, FILE_APPEND | LOCK_EX);
     }
+
+    /**
+     * Parse the most recent login attempts for the Settings → Security view. Newest first.
+     * @return array<int, array{time:string, ip:string, outcome:string, user:string, ua:string, xff:string}>
+     */
+    public static function recentLoginAttempts(int $limit = 100): array
+    {
+        $file = __DIR__ . '/../../storage/logs/auth.log';
+        if (!is_file($file)) {
+            return [];
+        }
+        $lines = @file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        $lines = array_slice($lines, -$limit);          // last N
+        $lines = array_reverse($lines);                 // newest first
+
+        $out = [];
+        foreach ($lines as $line) {
+            if (preg_match('/^(.+?)\s{2,}(\S+)\s+outcome=(\w+)\s+user="(.*?)"\s+ua="(.*?)"(?:\s+xff="(.*?)")?\s*$/', $line, $m)) {
+                $out[] = [
+                    'time'    => trim($m[1]),
+                    'ip'      => $m[2],
+                    'outcome' => $m[3],
+                    'user'    => $m[4],
+                    'ua'      => $m[5],
+                    'xff'     => $m[6] ?? '',
+                ];
+            }
+        }
+        return $out;
+    }
 }
