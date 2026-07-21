@@ -282,6 +282,49 @@ class MessageRepository
     }
 
     /**
+     * The other messages of an opened mail's conversation, for the reader stack — the whole
+     * exchange in one place (incoming AND your own Sent replies + archived mail), so you never
+     * have to jump to Sent. Scoped to the same account (a conversation lives in one mailbox);
+     * trash/spam/drafts are excluded as noise. Newest-first; the reader reverses for the
+     * chronological display option. The opened message itself is excluded.
+     */
+    public static function threadMessages(int $messageId): array
+    {
+        $db = Database::connection();
+        $stmt = $db->prepare('SELECT thread_id, account_id FROM messages WHERE id = ?');
+        $stmt->execute([$messageId]);
+        $me = $stmt->fetch();
+        if (!$me || ($me['thread_id'] ?? '') === '') {
+            return [];
+        }
+
+        $stmt = $db->prepare(
+            "SELECT id, folder_role, sender_name, sender_email, date_sent, body_plain, body_html
+             FROM messages
+             WHERE thread_id = ? AND account_id = ? AND id <> ?
+               AND folder_role IN ('inbox', 'sent', 'archive')
+             ORDER BY date_sent DESC"
+        );
+        $stmt->execute([$me['thread_id'], (int) $me['account_id'], $messageId]);
+
+        return array_map(function (array $r): array {
+            $body = trim((string) ($r['body_plain'] ?? ''));
+            if ($body === '') {
+                $body = HtmlMailRenderer::toText((string) ($r['body_html'] ?? ''));
+            }
+            $body = trim(preg_replace('/[ \t]+/', ' ', $body));
+            return [
+                'id'      => (int) $r['id'],
+                'folder'  => $r['folder_role'],                 // 'sent'/'archive' get a badge
+                'sender'  => ($r['sender_name'] ?? '') !== '' ? $r['sender_name'] : $r['sender_email'],
+                'time'    => self::fullTimeLabel($r['date_sent']),
+                'snippet' => mb_substr(preg_replace('/\s+/', ' ', $body), 0, 140),
+                'body'    => $body,
+            ];
+        }, $stmt->fetchAll());
+    }
+
+    /**
      * Batched attachment lookup for a set of messages — one query instead of one per row,
      * used to enrich both the server-rendered reader and the JS row map.
      * @return array<int, array<int, array{id:int, filename:string, mimeType:string, size:int}>>

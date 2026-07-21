@@ -555,6 +555,77 @@
 }
 .attachment-chip__menu-item:hover { background: var(--hover-bg); }
 
+/* Conversation thread stack — below the mail body, its own solid divider. Older messages
+   as collapsible strips (sender · badge · time + preview), click to expand the full text. */
+.reader__thread {
+  margin: 28px -32px 0;
+  padding: 22px 32px 0;
+  border-top: 1px solid var(--border);
+}
+.reader__thread-sep {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.reader__thread-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.reader__thread-order {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  padding: 4px 11px;
+  cursor: pointer;
+}
+.reader__thread-order:hover { background: var(--hover-bg); }
+.reader__thread-list { display: flex; flex-direction: column; gap: 8px; }
+
+.thread-msg {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  background: var(--list-bg);
+  cursor: pointer;
+}
+.thread-msg:hover { background: var(--hover-bg); }
+.thread-msg__row { display: flex; align-items: center; gap: 8px; }
+.thread-msg__sender { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.thread-msg__badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--hover-bg);
+  color: var(--text-tertiary);
+}
+.thread-msg__time { margin-left: auto; font-size: 11.5px; color: var(--text-tertiary); }
+.thread-msg__preview {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.thread-msg__body {
+  margin-top: 9px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-wrap: break-word;
+}
+.thread-msg.is-collapsed .thread-msg__body { display: none; }
+.thread-msg:not(.is-collapsed) .thread-msg__preview { display: none; }
+
 .reader__body {
   font-size: 14.5px;
   line-height: 1.7;

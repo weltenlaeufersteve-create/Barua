@@ -212,6 +212,16 @@ if (preg_match('#^/messages/(\d+)/html$#', $path, $m) && $method === 'GET') {
     return;
 }
 
+if (preg_match('#^/messages/(\d+)/thread$#', $path, $m) && $method === 'GET') {
+    session_write_close(); // read-only
+    header('Content-Type: application/json');
+    echo json_encode([
+        'ok'       => true,
+        'messages' => \Barua\Mail\MessageRepository::threadMessages((int) $m[1]),
+    ]);
+    return;
+}
+
 if (preg_match('#^/attachments/(\d+)$#', $path, $m) && $method === 'GET') {
     $stmt = \Barua\Database::connection()->prepare('SELECT * FROM attachments WHERE id = ?');
     $stmt->execute([(int) $m[1]]);

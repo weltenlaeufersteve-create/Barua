@@ -340,8 +340,7 @@ class SyncService
         } catch (\Throwable $e) {
         }
 
-        // Stage 1: thread_id falls back to the message's own id; proper threading is Stage 2.
-        $threadId = $inReplyTo !== '' ? $inReplyTo : $messageId;
+        $threadId = self::threadRoot($message, $inReplyTo, $messageId);
 
         $groupType = self::classify($message, $from['email']);
 
@@ -576,6 +575,38 @@ class SyncService
             $value = $value->first();
         }
         return self::decodeMime(trim((string) $value));
+    }
+
+    /**
+     * The thread's grouping key. RFC 5322 References lists ancestors oldest-first, so its
+     * FIRST id is the thread root — the whole chain (A→B→C→…) then shares one key, fixing the
+     * old logic that keyed on In-Reply-To and split anything deeper than two messages.
+     * Falls back to In-Reply-To (direct parent), then the message's own id (a thread start).
+     * Message-ids are stored without angle brackets, so we strip them here to match.
+     */
+    private static function threadRoot($message, string $inReplyTo, string $messageId): string
+    {
+        $refs = '';
+        try {
+            $refs = trim((string) self::rawScalar($message->getReferences()));
+        } catch (\Throwable $e) {
+        }
+        if ($refs !== '' && preg_match('/<?\s*([^<>\s]+@[^<>\s]+?)\s*>?(?:\s|$)/', $refs, $m)) {
+            return $m[1];
+        }
+        return $inReplyTo !== '' ? $inReplyTo : $messageId;
+    }
+
+    /** Like scalar() but without MIME decoding — References/Message-IDs are never encoded. */
+    private static function rawScalar($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        if (is_object($value) && method_exists($value, 'first')) {
+            $value = $value->first();
+        }
+        return trim((string) $value);
     }
 
     /**

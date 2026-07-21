@@ -370,6 +370,15 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
             </div>
           <?php endforeach; ?>
         </div>
+        <!-- Conversation stack: the rest of this thread (incoming + your own Sent replies),
+             newest-first by default. Filled client-side from /messages/{id}/thread. -->
+        <div class="reader__thread" id="reader-thread" style="display:none">
+          <div class="reader__thread-sep">
+            <span class="reader__thread-title">Conversation · <span id="thread-count">0</span></span>
+            <button type="button" class="reader__thread-order" id="thread-order"></button>
+          </div>
+          <div class="reader__thread-list" id="thread-list"></div>
+        </div>
       </div>
       <div class="reader__toolbar">
         <button class="pill" id="reader-reply"><?= sidebarIcon('reply') ?> Reply</button>
@@ -518,6 +527,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
 
     // Initialise the pre-selected message's rendering (respecting the app theme).
     applyReaderMode();
+    if (currentMsgId) fetchThread(currentMsgId);
 
     // Row actions: pin toggle (IMAP \Flagged), archive, trash — server write + cache + UI.
     var mainCsrf = <?= json_encode($csrfToken) ?>;
@@ -611,6 +621,62 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
       wrap.style.display = '';
     }
 
+    // ---- Conversation thread stack ----
+    // Fetched newest-first; cached so the order toggle re-renders without a refetch.
+    var THREAD_ORDER_KEY = 'barua_thread_order';
+    var threadCache = [];
+    function threadOrderAsc() {
+      try { return localStorage.getItem(THREAD_ORDER_KEY) === 'asc'; } catch (e) { return false; }
+    }
+    function renderThread() {
+      var wrap = document.getElementById('reader-thread');
+      var list = document.getElementById('thread-list');
+      if (!wrap || !list) return;
+      if (!threadCache.length) { wrap.style.display = 'none'; list.innerHTML = ''; return; }
+      var asc = threadOrderAsc();
+      var items = asc ? threadCache.slice().reverse() : threadCache;
+      document.getElementById('thread-count').textContent = threadCache.length;
+      var orderBtn = document.getElementById('thread-order');
+      if (orderBtn) orderBtn.textContent = asc ? 'Oldest first' : 'Newest first';
+      list.innerHTML = items.map(function (m) {
+        var badge = m.folder === 'sent' ? '<span class="thread-msg__badge">Sent</span>'
+          : m.folder === 'archive' ? '<span class="thread-msg__badge">Archive</span>' : '';
+        return '<div class="thread-msg is-collapsed" tabindex="0" role="button">'
+          + '<div class="thread-msg__row">'
+          + '<span class="thread-msg__sender">' + escapeHtml(m.sender) + '</span>'
+          + badge
+          + '<span class="thread-msg__time">' + escapeHtml(m.time) + '</span>'
+          + '</div>'
+          + '<div class="thread-msg__preview">' + escapeHtml(m.snippet) + '</div>'
+          + '<div class="thread-msg__body">' + escapeHtml(m.body).replace(/\n/g, '<br>') + '</div>'
+          + '</div>';
+      }).join('');
+      wrap.style.display = '';
+    }
+    function fetchThread(msgId) {
+      threadCache = [];
+      renderThread(); // collapse the old thread immediately while the new one loads
+      if (!msgId) return;
+      fetch('/messages/' + msgId + '/thread')
+        .then(function (r) { return r.json(); })
+        .then(function (res) { threadCache = (res && res.ok && res.messages) || []; renderThread(); })
+        .catch(function () {});
+    }
+    var threadListEl = document.getElementById('thread-list');
+    if (threadListEl) {
+      threadListEl.addEventListener('click', function (e) {
+        var strip = e.target.closest('.thread-msg');
+        if (strip) strip.classList.toggle('is-collapsed');
+      });
+    }
+    var threadOrderBtn = document.getElementById('thread-order');
+    if (threadOrderBtn) {
+      threadOrderBtn.addEventListener('click', function () {
+        try { localStorage.setItem(THREAD_ORDER_KEY, threadOrderAsc() ? 'desc' : 'asc'); } catch (e) {}
+        renderThread();
+      });
+    }
+
     // Wire one message row: reader-open on click + pin/archive/trash actions.
     // Used for the initial rows AND for rows slid in later by the live stream.
     function wireMessageRow(row) {
@@ -654,6 +720,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         meta.querySelector('.reader__from-email').textContent = msg.email + ' · ' + msg.accountLabel;
         meta.querySelector('.reader__time').textContent = msg.fullTime;
         renderReaderAttachments(msg.attachments);
+        fetchThread(currentMsgId);
 
         document.body.setAttribute('data-mobile-view', 'reader');
       });
