@@ -144,10 +144,10 @@
   }
   .set-addform { display: none; margin-top: 12px; }
   .set-addform.is-open { display: block; }
-  .set-detect { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
-  .set-detect label { flex: 1; min-width: 160px; margin-bottom: 0; }
+  .set-detect { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 4px 0 8px; }
+  .set-detect label { width: 100%; margin-bottom: 0; }
   .set-detect .set-save { flex-shrink: 0; }
-  .set-detect__status { flex-basis: 100%; font-size: 12px; color: var(--text-tertiary); }
+  .set-detect__status { font-size: 12px; color: var(--text-tertiary); }
   .set-detect__status.is-error { color: var(--danger, #d9534f); }
   .set-detect__status.is-ok { color: var(--accent); }
 
