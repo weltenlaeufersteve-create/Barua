@@ -210,6 +210,17 @@
   }
   .tint-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px var(--border); }
 
+  .set-about__block { margin-bottom: 22px; }
+  .set-about__label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--text-tertiary); margin-bottom: 8px;
+  }
+  .set-about__features { margin: 0; padding-left: 18px; }
+  .set-about__features li { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .set-about__line { font-size: 13.5px; color: var(--text-primary); margin: 2px 0; }
+  .set-about__line a { color: var(--accent); text-decoration: none; }
+  .set-about__line a:hover { text-decoration: underline; }
+
   /* ---- Mobile: full screen, tabs become a scrollable bar on top, forms single-column ---- */
   @media (max-width: 640px) {
     .settings-overlay { align-items: stretch; justify-content: stretch; }
@@ -249,6 +260,7 @@
       <div class="settings-tab" data-tab="appearance">Appearance</div>
       <div class="settings-tab" data-tab="signatures">Signatures</div>
       <div class="settings-tab" data-tab="general">General</div>
+      <div class="settings-tab" data-tab="about">About</div>
     </div>
 
     <div class="settings-panel is-active" data-panel="accounts">
@@ -476,6 +488,32 @@
         <p class="set-panel-desc">App-wide preferences and account security. More options are on the way.</p>
       </div>
       <p style="color: var(--text-tertiary);">Coming soon.</p>
+    </div>
+
+    <div class="settings-panel" data-panel="about">
+      <div class="set-panel-head">
+        <h3 class="set-panel-title">About</h3>
+        <p class="set-panel-desc"><strong>Barua Mail</strong> — a fast, self-hosted client that merges your IMAP accounts into one calm, colour-coded inbox.</p>
+      </div>
+      <div class="set-about">
+        <div class="set-about__block">
+          <div class="set-about__label">Highlights</div>
+          <ul class="set-about__features">
+            <li>Unified inbox across all your accounts, colour-coded per sender</li>
+            <li>Two-axis filtering — type (Clean Inbox, Correspondents, Newsletters, Notifications) × Pinned / Attachments</li>
+            <li>Conversation threading with your own replies inline</li>
+            <li>Per-account HTML &amp; plain-text signatures</li>
+            <li>Attachments with preview, and an attachments filter</li>
+            <li>Auto-detect server settings when adding an account</li>
+            <li>Eight themes, light &amp; dark, with per-mail reading mode</li>
+          </ul>
+        </div>
+        <div class="set-about__block">
+          <div class="set-about__label">Support</div>
+          <p class="set-about__line">Weltenläufer Media</p>
+          <p class="set-about__line"><a href="mailto:support@weltenlaeufer.de">support@weltenlaeufer.de</a></p>
+        </div>
+      </div>
     </div>
   </div>
 </div>

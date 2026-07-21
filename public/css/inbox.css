@@ -29,9 +29,11 @@
 
 .sidebar__title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400; /* MAIL regular; BARUA is bolded via <strong> */
+  letter-spacing: 0.06em;
   padding: 4px 8px 14px;
 }
+.sidebar__title strong { font-weight: 700; }
 
 .sidebar__item {
   display: flex;

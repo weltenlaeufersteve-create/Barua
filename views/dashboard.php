@@ -153,7 +153,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
     <div class="sidebar">
       <div class="sidebar__scroll">
       <div class="mobile-back" data-go="list"><?= sidebarIcon('back') ?> Inbox</div>
-      <div class="sidebar__title">Barua</div>
+      <div class="sidebar__title"><strong>BARUA</strong> MAIL</div>
 
       <a href="<?= htmlspecialchars($url(null, 'inbox', $type, $filterPinned, $filterAttachments)) ?>" class="sidebar__item<?= $activeAccount === null && $inInbox ? ' is-active' : '' ?>"><?= sidebarIcon('inbox') ?> Inbox <span class="sidebar__count" id="inbox-count"><?= $totalUnread ?: '' ?></span></a>
 
