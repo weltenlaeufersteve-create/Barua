@@ -247,6 +247,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           <?php endforeach; ?>
         </div>
       </div>
+      <button type="button" class="compose-fab" title="Compose" aria-label="Compose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
       <button type="button" class="filter-fab<?= $inInbox && ($filterPinned || $filterAttachments) ? ' has-filters' : '' ?>" id="filter-fab" aria-label="Filter"><?= sidebarIcon('filter') ?></button>
 
       <?php if (empty($rows)): ?>

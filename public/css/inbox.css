@@ -798,9 +798,10 @@
 .pill { display: inline-flex; align-items: center; gap: 7px; }
 .pill .sidebar__icon { width: 15px; height: 15px; color: inherit; }
 
-/* Drawer scrim and filter button exist only in the mobile layout. */
+/* Drawer scrim and the floating buttons exist only in the mobile layout. */
 .sidebar-scrim { display: none; }
 .filter-fab { display: none; }
+.compose-fab { display: none; }
 
 /* ---------- Mobile ---------- */
 /* Below 900px: collapse to one visible column at a time, driven by
@@ -885,6 +886,28 @@
     cursor: pointer;
   }
   .filter-fab .sidebar__icon { width: 24px; height: 24px; color: inherit; }
+
+  /* Compose button sits left of the filter button — both in the right-thumb zone. */
+  .compose-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 86px; /* 18 (filter right) + 56 (filter width) + 12 gap */
+    bottom: 22px;
+    z-index: 45;
+    width: 56px;
+    height: 56px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-text);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+    cursor: pointer;
+  }
+  .compose-fab svg { width: 22px; height: 22px; }
+  body[data-mobile-view="reader"] .compose-fab,
+  body[data-mobile-view="sidebar"] .compose-fab { display: none; }
   /* A dot when filters are on: active narrowing must be visible without opening the
      popover, or a short list looks broken rather than filtered. */
   .filter-fab.has-filters::after {
@@ -933,8 +956,8 @@
   .filter-pills.is-open .filter-pill:nth-last-child(6) { transition-delay: 150ms; }
 
   /* The button acknowledges the tap. */
-  .filter-fab { transition: transform 0.17s cubic-bezier(0.2, 0.8, 0.3, 1); }
-  .filter-fab:active { transform: scale(0.93); }
+  .filter-fab, .compose-fab { transition: transform 0.17s cubic-bezier(0.2, 0.8, 0.3, 1); }
+  .filter-fab:active, .compose-fab:active { transform: scale(0.93); }
   .filter-pill {
     padding: 11px 18px;
     font-size: 15px;
