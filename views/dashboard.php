@@ -506,19 +506,13 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
 
     var printBtn = document.getElementById('reader-print');
     if (printBtn) printBtn.addEventListener('click', function () {
-      var wrap = document.getElementById('reader-html');
-      if (wrap && wrap.style.display !== 'none') {
-        var frame = document.getElementById('reader-frame');
-        try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {}
-        return;
-      }
-      // Plain-text mail: there's no visible iframe. The /html endpoint renders the
-      // plain body too, so print it from a throwaway hidden frame (always light —
-      // dark-inverted mail wastes ink on paper).
+      // Always print from a throwaway LIGHT frame, never the on-screen one — a mail shown
+      // dark would otherwise print white-on-white. The /html endpoint (no dark param)
+      // renders both HTML and plain-text bodies on white; carry the images choice through.
       if (!currentMsgId) return;
       var tmp = document.createElement('iframe');
       tmp.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-      tmp.src = '/messages/' + currentMsgId + '/html';
+      tmp.src = '/messages/' + currentMsgId + '/html' + (readerImages ? '?images=1' : '');
       tmp.onload = function () {
         try { tmp.contentWindow.focus(); tmp.contentWindow.print(); } catch (e) {}
         setTimeout(function () { tmp.remove(); }, 2000);
