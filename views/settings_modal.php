@@ -198,6 +198,35 @@
     box-shadow: 0 0 0 1px var(--accent);
   }
   .tint-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px var(--border); }
+
+  /* ---- Mobile: full screen, tabs become a scrollable bar on top, forms single-column ---- */
+  @media (max-width: 640px) {
+    .settings-overlay { align-items: stretch; justify-content: stretch; }
+    .settings-modal {
+      width: 100%; height: 100%;
+      max-width: 100%; max-height: 100%;
+      border-radius: 0;
+      flex-direction: column;
+    }
+    .settings-tabs {
+      width: auto;
+      flex-shrink: 0;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 46px 12px 12px; /* right pad clears the ✕ */
+    }
+    .settings-tabs::-webkit-scrollbar { display: none; }
+    .settings-tabs__header { display: none; } /* ✕ + tab context is enough */
+    .settings-tab { flex-shrink: 0; white-space: nowrap; padding: 8px 13px; font-size: 13.5px; }
+    .settings-panel { padding: 20px 16px 32px; }
+    .settings-close { top: 11px; right: 12px; }
+    /* Two-column account/signature forms stack on a phone. */
+    .set-grid { grid-template-columns: 1fr; }
+  }
 </style>
 
 <div class="settings-overlay" id="settings-overlay">
