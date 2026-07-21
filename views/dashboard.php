@@ -403,7 +403,18 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
     // remote images blocked by default, toggleable via the floating icon row.
     var themeMode = (localStorage.getItem('barua_theme') || 'dark-neutral').split('-')[0];
     var readerImages = false;
-    var readerDark = themeMode === 'dark';
+    // Per-mail light/dark is a PERSISTENT reading preference: once set it applies to every
+    // mail (great for reading bright newsletters dark at night), defaulting to the app theme
+    // until the user overrides it.
+    function readerDarkPref() {
+      try {
+        var v = localStorage.getItem('barua_reader_dark');
+        if (v === '1') return true;
+        if (v === '0') return false;
+      } catch (e) {}
+      return themeMode === 'dark';
+    }
+    var readerDark = readerDarkPref();
     var currentHasHtml = <?= $selected && trim($selected['body_html'] ?? '') !== '' ? 'true' : 'false' ?>;
 
     var SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
@@ -469,7 +480,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
       if (!wrap) return;
       currentHasHtml = !!msg.hasHtml;
       readerImages = false;                 // reset per message
-      readerDark = themeMode === 'dark';    // ditto — start from the app theme
+      readerDark = readerDarkPref();        // persistent choice, not reset to the theme
       // Only the remote-image notice is HTML-specific; the rest of the bar is universal.
       if (imgbar) imgbar.style.display = currentHasHtml ? '' : 'none';
       plain.style.display = currentHasHtml ? 'none' : '';
@@ -487,6 +498,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
     var themeToggleBtn = document.getElementById('reader-theme');
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', function () {
       readerDark = !readerDark;
+      try { localStorage.setItem('barua_reader_dark', readerDark ? '1' : '0'); } catch (e) {}
       applyReaderMode();
     });
 
