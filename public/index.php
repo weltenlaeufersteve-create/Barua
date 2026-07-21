@@ -308,6 +308,34 @@ if ($path === '/sync' && $method === 'POST') {
     return;
 }
 
+if ($path === '/accounts/detect' && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    $email = trim($_POST['email'] ?? '');
+    $password = (string) ($_POST['password'] ?? '');
+    if ($email === '' || $password === '') {
+        echo json_encode(['ok' => false, 'error' => 'Enter email and password first']);
+        return;
+    }
+    // Real logins over the network — let the probing run past the default limit.
+    @set_time_limit(90);
+    $imap = \Barua\Accounts\AutoDetect::imap($email, $password);
+    $smtp = \Barua\Accounts\AutoDetect::smtp($email, $password);
+    echo json_encode([
+        'ok'    => $imap !== null || $smtp !== null,
+        'imap'  => $imap,
+        'smtp'  => $smtp,
+        'error' => ($imap === null && $smtp === null)
+            ? "Couldn't detect settings — please enter them manually."
+            : null,
+    ]);
+    return;
+}
+
 if ($path === '/accounts' && $method === 'POST') {
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
         http_response_code(403);

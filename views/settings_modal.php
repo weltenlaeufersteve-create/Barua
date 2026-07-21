@@ -144,6 +144,12 @@
   }
   .set-addform { display: none; margin-top: 12px; }
   .set-addform.is-open { display: block; }
+  .set-detect { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
+  .set-detect label { flex: 1; min-width: 160px; margin-bottom: 0; }
+  .set-detect .set-save { flex-shrink: 0; }
+  .set-detect__status { flex-basis: 100%; font-size: 12px; color: var(--text-tertiary); }
+  .set-detect__status.is-error { color: var(--danger, #d9534f); }
+  .set-detect__status.is-ok { color: var(--accent); }
 
   .set-account__editform { display: none; padding: 4px 0 16px; }
   .set-account__editform.is-open { display: block; }
@@ -342,6 +348,13 @@
         <div class="set-grid">
           <label>Label<input type="text" name="label" required></label>
           <label>Email<input type="email" name="email" required></label>
+        </div>
+        <!-- Quick path: email + password + detect fills the IMAP/SMTP fields below (verified
+             by a real login). The detailed fields stay editable as a fallback/override. -->
+        <div class="set-detect">
+          <label>Password<input type="password" id="detect-password" autocomplete="new-password"></label>
+          <button type="button" class="set-save" id="detect-btn">Detect settings</button>
+          <span class="set-detect__status" id="detect-status"></span>
         </div>
         <div class="set-subhead">IMAP (incoming)</div>
         <div class="set-grid">
@@ -573,6 +586,51 @@
       addSigToggle.addEventListener('click', function () { addSigForm.classList.toggle('is-open'); });
       var addSigCancel = document.getElementById('set-add-sig-cancel');
       if (addSigCancel) addSigCancel.addEventListener('click', function () { addSigForm.classList.remove('is-open'); });
+    }
+
+    // ---- Auto-detect IMAP/SMTP from email + password (fills the fields below) ----
+    var detectBtn = document.getElementById('detect-btn');
+    if (detectBtn) {
+      var addF = document.getElementById('set-addform');
+      var setField = function (name, val) {
+        var el = addF.querySelector('[name="' + name + '"]');
+        if (el && val != null) el.value = val;
+      };
+      detectBtn.addEventListener('click', function () {
+        var email = (addF.querySelector('[name="email"]').value || '').trim();
+        var pass = document.getElementById('detect-password').value;
+        var status = document.getElementById('detect-status');
+        status.className = 'set-detect__status';
+        if (!email || !pass) { status.textContent = 'Enter email and password first.'; status.classList.add('is-error'); return; }
+        detectBtn.disabled = true;
+        status.textContent = 'Detecting…';
+        var body = new URLSearchParams();
+        body.set('csrf_token', csrf);
+        body.set('email', email);
+        body.set('password', pass);
+        fetch('/accounts/detect', { method: 'POST', body: body })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            detectBtn.disabled = false;
+            if (!res.ok) { status.textContent = res.error || 'Detection failed.'; status.classList.add('is-error'); return; }
+            if (res.imap) {
+              setField('imap_host', res.imap.host); setField('imap_port', res.imap.port);
+              setField('imap_encryption', res.imap.encryption); setField('imap_username', res.imap.username);
+              setField('imap_password', pass);
+            }
+            if (res.smtp) {
+              setField('smtp_host', res.smtp.host); setField('smtp_port', res.smtp.port);
+              setField('smtp_encryption', res.smtp.encryption); setField('smtp_username', res.smtp.username);
+              setField('smtp_password', pass);
+            }
+            var bits = [];
+            bits.push(res.imap ? 'IMAP ✓' : 'IMAP not found');
+            bits.push(res.smtp ? 'SMTP ✓' : 'SMTP not found');
+            status.textContent = bits.join(' · ') + (res.imap && res.smtp ? ' — review and create.' : ' — fill the rest manually.');
+            status.classList.add(res.imap && res.smtp ? 'is-ok' : 'is-error');
+          })
+          .catch(function () { detectBtn.disabled = false; status.textContent = 'Network error.'; status.classList.add('is-error'); });
+      });
     }
 
     function recolourAccount(accountId, colour) {
