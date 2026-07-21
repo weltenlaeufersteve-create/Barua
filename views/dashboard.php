@@ -857,7 +857,17 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         }
       } catch (err) {}
 
-      document.addEventListener('click', function () { setFilterOpen(false); });
+      // When the pop-out is open, the first outside tap should ONLY dismiss it — not also
+      // open whatever it landed on (a mail row). Capture phase runs before the row's own
+      // click handler, so swallowing the event here stops the mail from opening; the next
+      // tap works normally. Taps on the FAB / inside the pop-out have their own handlers.
+      document.addEventListener('click', function (e) {
+        if (!filterPills.classList.contains('is-open')) return;
+        if (e.target.closest('#filter-fab') || e.target.closest('#filter-pills')) return;
+        setFilterOpen(false);
+        e.stopPropagation();
+        e.preventDefault();
+      }, true);
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') setFilterOpen(false);
       });

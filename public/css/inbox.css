@@ -167,16 +167,10 @@
   padding: 10px 14px;
   flex-shrink: 0;
 }
-/* Full-width row for the toggles. A wrapper rather than a zero-height break element:
-   a break would occupy a flex line of its own, so the row-gap counted twice and the
-   rows sat twice as far apart as the pills within a row. This way there is exactly one
-   gap between the type rows and the toggle row, matching the horizontal spacing. */
-.filter-pills__toggles {
-  flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+/* Filter toggles live only in the sidebar on desktop — above the list, the type pills are
+   enough. On mobile they reappear inside the thumb pop-out (see the media query, where this
+   wrapper becomes display:contents). */
+.filter-pills__toggles { display: none; }
 
 .filter-pill {
   flex-shrink: 0;
