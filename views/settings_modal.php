@@ -125,13 +125,18 @@
   }
   .set-swatch.is-active { box-shadow: 0 0 0 2px var(--sidebar-bg), 0 0 0 4px currentColor; }
 
+  /* Icon buttons (pen / trash) — save space, especially on mobile. */
   .set-account__edit,
   .set-account__remove {
-    background: var(--hover-bg); border: 1.5px solid var(--border); color: var(--text-primary);
-    border-radius: 999px; padding: 5px 13px; font-size: 12px; cursor: pointer; flex-shrink: 0;
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; padding: 0;
+    border-radius: var(--radius-sm); cursor: pointer; color: var(--text-tertiary);
   }
-  .set-account__edit:hover,
-  .set-account__remove:hover { background: var(--selected-bg); }
+  .set-account__edit:hover { background: var(--hover-bg); color: var(--text-primary); }
+  .set-account__remove:hover { background: var(--hover-bg); color: var(--danger, #d9534f); }
+  .set-account__edit .sidebar__icon,
+  .set-account__remove .sidebar__icon { width: 16px; height: 16px; color: inherit; }
   .set-add-link {
     display: inline-block; margin-top: 18px; font-size: 13px; color: var(--accent);
     text-decoration: none;
@@ -275,10 +280,10 @@
               <?php endforeach; ?>
             </div>
           </div>
-          <button type="button" class="set-account__edit" data-edit-toggle style="border-color: <?= htmlspecialchars($sa['colour']) ?>">Edit</button>
+          <button type="button" class="set-account__edit" data-edit-toggle title="Edit"><?= sidebarIcon('edit') ?></button>
           <form method="post" action="/accounts/<?= (int) $sa['id'] ?>/delete" onsubmit="return confirm('Remove this account?');" style="margin:0;">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-            <button type="submit" class="set-account__remove" style="border-color: <?= htmlspecialchars($sa['colour']) ?>">Remove</button>
+            <button type="submit" class="set-account__remove" title="Remove"><?= sidebarIcon('trash') ?></button>
           </form>
         </div>
         <form class="set-account__editform" method="post" action="/accounts/<?= (int) $sa['id'] ?>">
@@ -415,10 +420,10 @@
               <strong><?= htmlspecialchars($sig['name']) ?></strong>
               <span class="set-sig__badge"><?= strtoupper($sig['format']) ?></span>
             </div>
-            <button type="button" class="set-account__edit" data-edit-toggle>Edit</button>
+            <button type="button" class="set-account__edit" data-edit-toggle title="Edit"><?= sidebarIcon('edit') ?></button>
             <form method="post" action="/signatures/<?= (int) $sig['id'] ?>/delete" onsubmit="return confirm('Delete this signature?');" style="margin:0;">
               <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-              <button type="submit" class="set-account__remove">Delete</button>
+              <button type="submit" class="set-account__remove" title="Delete"><?= sidebarIcon('trash') ?></button>
             </form>
           </div>
           <form class="set-account__editform" method="post" action="/signatures/<?= (int) $sig['id'] ?>">
