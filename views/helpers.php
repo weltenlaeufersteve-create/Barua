@@ -94,6 +94,16 @@ function renderMailRow(array $row, bool $isDraftView = false, bool $isSelected =
         ? '<span class="mail-row__clip" title="Has attachments">' . sidebarIcon('attachment') . '</span>'
         : '';
 
+    // Conversation size, before the clip. Only shown when the thread has more than one
+    // message — the older ones are folded away here and live in the reader's thread stack.
+    $threadCount = (int) ($row['thread_count'] ?? 1);
+    $bubble = $threadCount > 1
+        ? '<span class="mail-row__thread" title="' . $threadCount . ' messages in this conversation">' . $threadCount . '</span>'
+        : '';
+    $markers = ($bubble !== '' || $clip !== '')
+        ? '<div class="mail-row__markers">' . $bubble . $clip . '</div>'
+        : '';
+
     return '<div class="' . $cls . '" ' . $idAttr . ' data-account="' . (int) $row['account_id'] . '">'
         . '<div class="mail-row__actions">' . $actions . '</div>'
         . '<span class="mail-row__stripe" style="background: ' . $e($row['account_colour']) . '"></span>'
@@ -105,7 +115,7 @@ function renderMailRow(array $row, bool $isDraftView = false, bool $isSelected =
         . '</div>'
         . '<div class="mail-row__meta">'
         . '<span class="mail-row__time">' . $e(MessageRepository::timeLabel($row['date_sent'])) . '</span>'
-        . $clip
+        . $markers
         . '</div>'
         . '</div></div>';
 }

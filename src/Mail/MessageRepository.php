@@ -65,13 +65,39 @@ class MessageRepository
         return [$where, $params];
     }
 
+    // A message's thread grouping key, NULL/empty thread_id falling back to its own id so a
+    // message that starts (or is) a thread is its own group. Kept as a fragment so the
+    // collapse and the per-thread count use exactly the same key.
+    private const THREAD_KEY = "COALESCE(NULLIF(%1\$s.thread_id, ''), CONCAT('id:', %1\$s.id))";
+
+    /**
+     * The list is threaded: one row per conversation, showing its NEWEST message within the
+     * current view; the older replies fold away (they reappear in the reader's conversation
+     * stack). `thread_count` carries the size of the whole conversation (inbox + your Sent
+     * replies + archive) for the row's count bubble.
+     */
     public static function inboxMessages(string $type = '', bool $pinned = false, bool $attach = false, int $limit = 100, ?int $accountId = null): array
     {
         [$where, $params] = self::inboxPredicate($type, $pinned, $attach, $accountId);
-        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour
-                FROM messages m
+        $key = sprintf(self::THREAD_KEY, 'm');
+        $tkey = sprintf(self::THREAD_KEY, 't');
+
+        // Inner query: rank each matching message within its thread, newest first. Outer:
+        // keep rank 1 (the representative row) and count the full conversation for the bubble.
+        $sql = "SELECT m.*, a.label AS account_label, a.colour AS account_colour,
+                       (SELECT COUNT(*) FROM messages t
+                        WHERE t.account_id = m.account_id
+                          AND $tkey = $key
+                          AND t.folder_role IN ('inbox', 'sent', 'archive')) AS thread_count
+                FROM (
+                    SELECT m.*, ROW_NUMBER() OVER (
+                        PARTITION BY $key ORDER BY m.date_sent DESC, m.id DESC
+                    ) AS rn
+                    FROM messages m
+                    WHERE $where
+                ) m
                 JOIN accounts a ON a.id = m.account_id
-                WHERE $where
+                WHERE m.rn = 1
                 ORDER BY m.date_sent DESC
                 LIMIT " . (int) $limit;
         $stmt = Database::connection()->prepare($sql);
