@@ -89,9 +89,13 @@
     }
 
     // The plain text appended to the (plain-text) textarea for a given sender.
+    // Normalise CRLF/CR to LF: a <textarea> reports its .value with newlines
+    // normalised to \n, so the stored signature must use \n too — otherwise the
+    // endsWith() strip on sender-switch misses and signatures pile up.
     function sigFor(accountId) {
       var s = sigInfo(accountId);
-      return s.plain ? ('\n\n-- \n' + s.plain) : '';
+      var plain = (s.plain || '').replace(/\r\n?/g, '\n');
+      return plain ? ('\n\n-- \n' + plain) : '';
     }
 
     function htmlEscape(t) {
