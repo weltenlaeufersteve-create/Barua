@@ -771,7 +771,21 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
     function setInboxBadge(n) {
       var badge = document.getElementById('inbox-count');
       if (badge) badge.textContent = n > 0 ? n : '';
+      updateTabIndicator(n);
     }
+
+    // ---- Tab indicator: put the unread count in the title, e.g. "(3) Barua Mail". This is
+    // also what makes Firefox show its own blue "attention" dot on a backgrounded pinned tab
+    // — that dot is drawn by the BROWSER; the page only has to change the title to trigger it. ----
+    var TAB_BASE_TITLE = 'Barua Mail';
+    var lastTabUnread = -1;
+    function updateTabIndicator(n) {
+      n = n > 0 ? n : 0;
+      if (n === lastTabUnread) return;
+      lastTabUnread = n;
+      document.title = n > 0 ? '(' + n + ') ' + TAB_BASE_TITLE : TAB_BASE_TITLE;
+    }
+    updateTabIndicator(<?= (int) $totalUnread ?>);
 
     // Reader toolbar: archive the currently open message.
     var readerArchive = document.getElementById('reader-archive');
