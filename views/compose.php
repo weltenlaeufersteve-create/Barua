@@ -97,25 +97,8 @@ foreach ($composeAccounts as $ca) {
     padding: 20px 24px; font-family: var(--font-sans);
   }
 
-  .compose__attachments {
-    display: none; flex-wrap: wrap; gap: 8px;
-    padding: 10px 24px 0;
-  }
-  .compose-att {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 8px 6px 11px; border: 1px solid var(--border); border-radius: 999px;
-    background: var(--hover-bg); font-size: 12.5px; max-width: 260px;
-  }
-  .compose-att.is-pending { opacity: 0.6; }
-  .compose-att__name { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .compose-att__size { color: var(--text-tertiary); flex-shrink: 0; }
-  .compose-att__remove {
-    flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
-    border: none; background: transparent; color: var(--text-tertiary);
-    cursor: pointer; font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
-  }
-  .compose-att__remove:hover { background: var(--selected-bg); color: var(--text-primary); }
-
+  /* .compose__attachments / chip styling lives in inbox.css, shared with the received-mail
+     attachment chips so both look identical. */
   .compose-main__toolbar {
     display: flex; align-items: center; gap: 8px;
     padding: 12px 24px; border-top: 1px solid var(--border);
@@ -330,17 +313,21 @@ foreach ($composeAccounts as $ca) {
       return (Math.round(b / 1024 / 1024 * 10) / 10) + ' MB';
     }
     function escAtt(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    // Same paperclip + chip markup as the received-mail attachments, for visual consistency.
+    var ATT_CLIP_SVG = '<svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
     function renderAttachments() {
       if (!attWrapEl) return;
       attWrapEl.innerHTML = composeAttachments.map(function (a) {
-        if (a.pending) {
-          return '<span class="compose-att is-pending"><span class="compose-att__name">' + escAtt(a.filename) + '</span><span class="compose-att__size">uploading…</span></span>';
-        }
-        return '<span class="compose-att" data-att-id="' + a.id + '">'
-          + '<span class="compose-att__name">' + escAtt(a.filename) + '</span>'
-          + '<span class="compose-att__size">' + fmtSize(a.size) + '</span>'
-          + '<button type="button" class="compose-att__remove" title="Remove" data-remove="' + a.id + '">&times;</button>'
-          + '</span>';
+        var right = a.pending
+          ? '<span class="attachment-chip__size">uploading…</span>'
+          : '<span class="attachment-chip__size">' + fmtSize(a.size) + '</span>';
+        var remove = a.pending ? ''
+          : '<button type="button" class="attachment-chip__remove" title="Remove" data-remove="' + a.id + '">&times;</button>';
+        return '<div class="attachment-chip' + (a.pending ? ' is-pending' : '') + '"' + (a.pending ? '' : ' data-att-id="' + a.id + '"') + '>'
+          + ATT_CLIP_SVG
+          + '<div class="attachment-chip__info"><span class="attachment-chip__name">' + escAtt(a.filename) + '</span>' + right + '</div>'
+          + remove
+          + '</div>';
       }).join('');
       attWrapEl.style.display = composeAttachments.length ? 'flex' : 'none';
     }

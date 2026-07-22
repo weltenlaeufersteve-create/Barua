@@ -544,6 +544,20 @@
 }
 .attachment-chip__more:hover { background: var(--selected-bg); color: var(--text-primary); }
 .attachment-chip__more svg { width: 15px; height: 15px; }
+/* Remove (×) variant, used by the compose chips — same footprint as the ⋮ button. */
+.attachment-chip__remove {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; padding: 0; cursor: pointer;
+  color: var(--text-tertiary); font-size: 17px; line-height: 1;
+}
+.attachment-chip__remove:hover { background: var(--selected-bg); color: var(--text-primary); }
+/* Compose chips: same look as received-mail chips, minus the click-to-download affordance. */
+.compose__attachments { display: none; flex-wrap: wrap; gap: 8px; padding: 10px 24px 0; }
+.compose__attachments .attachment-chip { cursor: default; }
+.compose__attachments .attachment-chip.is-pending { opacity: 0.6; }
 .attachment-chip__menu {
   position: absolute;
   top: calc(100% + 6px);
