@@ -93,9 +93,10 @@ foreach ($rows as $row) {
     $groups[MessageRepository::dateGroup($row['date_sent'])][] = $row;
 }
 
-// Drafts open in the composer, not the reader — no preselection there.
+// The reader always starts empty (no auto-opened message) — JS populates it
+// from a row click. Drafts open in the composer, not the reader, either way.
 $isDraftView = $view === 'drafts';
-$selected = $isDraftView ? null : ($rows[0] ?? null);
+$selected = null;
 
 // Drafts view: a compact map so a row click can reopen the draft in the composer.
 $jsDrafts = [];
@@ -127,6 +128,15 @@ foreach ($attachmentsByMessage as $mid => $atts) {
     }
 }
 $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']] ?? []) : [];
+
+// The reader's "filled" markup is always rendered (JS needs its element ids to exist
+// for the very first row click) but starts hidden behind the empty state below —
+// $sel is a blank fallback so the template can render without a real message.
+$sel = $selected ?? [
+    'id' => 0, 'subject' => '', 'account_id' => 0, 'account_colour' => 'transparent',
+    'sender_name' => '', 'sender_email' => '', 'account_label' => '', 'date_sent' => null,
+    'is_starred' => 0, 'body_plain' => '', 'body_html' => '',
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -302,27 +312,35 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
     <!-- Reader -->
     <div class="reader-col">
       <div class="mobile-back" data-go="list"><?= sidebarIcon('back') ?> Inbox</div>
-      <?php if ($selected): ?>
+
+      <!-- Empty state: shown until a message is opened, and again whenever the open
+           message is deleted/archived/refiled out from under the reader. -->
+      <div class="reader__empty" id="reader-empty"<?= $selected ? ' style="display:none"' : '' ?>>
+        <svg class="reader__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m3.5 6.5 8.5 7 8.5-7"/></svg>
+        <p class="reader__empty-text">Somewhere out there, a thousand words are being typed that no one needed to read.<br>This one can wait.</p>
+      </div>
+
+      <div id="reader-filled"<?= $selected ? '' : ' style="display:none"' ?>>
       <div class="reader__content">
-        <h1 class="reader__subject" id="reader-subject"><?= htmlspecialchars($selected['subject'] !== '' ? $selected['subject'] : '(no subject)') ?></h1>
+        <h1 class="reader__subject" id="reader-subject"><?= htmlspecialchars($sel['subject'] !== '' ? $sel['subject'] : '(no subject)') ?></h1>
         <div class="reader__meta" id="reader-meta">
-          <div class="reader__avatar" data-account="<?= (int) $selected['account_id'] ?>" style="background: <?= htmlspecialchars($selected['account_colour']) ?>">
-            <?= htmlspecialchars(initial($selected)) ?>
+          <div class="reader__avatar" data-account="<?= (int) $sel['account_id'] ?>" style="background: <?= htmlspecialchars($sel['account_colour']) ?>">
+            <?= htmlspecialchars(initial($sel)) ?>
           </div>
           <div>
-            <div class="reader__from-name"><?= htmlspecialchars($selected['sender_name'] !== '' ? $selected['sender_name'] : $selected['sender_email']) ?></div>
-            <div class="reader__from-email"><?= htmlspecialchars($selected['sender_email']) ?> · <?= htmlspecialchars($selected['account_label']) ?></div>
+            <div class="reader__from-name"><?= htmlspecialchars($sel['sender_name'] !== '' ? $sel['sender_name'] : $sel['sender_email']) ?></div>
+            <div class="reader__from-email"><?= htmlspecialchars($sel['sender_email']) ?> · <?= htmlspecialchars($sel['account_label']) ?></div>
           </div>
-          <div class="reader__time"><?= htmlspecialchars(MessageRepository::fullTimeLabel($selected['date_sent'])) ?></div>
+          <div class="reader__time"><?= htmlspecialchars(MessageRepository::fullTimeLabel($sel['date_sent'])) ?></div>
         </div>
-        <?php $selHasHtml = trim($selected['body_html'] ?? '') !== ''; ?>
+        <?php $selHasHtml = trim($sel['body_html'] ?? '') !== ''; ?>
         <!-- Action bar sits above the mail body and is ALWAYS visible — plain-text mail
              gets the same print / light-dark / ⋮ actions as HTML mail. Only the
              remote-image notice is HTML-specific and hides itself. -->
         <div class="reader__topbar">
           <div class="reader__imgbar" id="reader-imgbar"<?= $selHasHtml ? '' : ' style="display:none"' ?>>Remote images blocked · <span id="load-images">Load images</span></div>
           <div class="reader__floatbar" id="reader-floatbar">
-            <button type="button" class="icon-btn reader-pin<?= (int) ($selected['is_starred'] ?? 0) === 1 ? ' is-pinned' : '' ?>" id="reader-pin" title="Pin"><?= rowActionIcon('pin') ?></button>
+            <button type="button" class="icon-btn reader-pin<?= (int) ($sel['is_starred'] ?? 0) === 1 ? ' is-pinned' : '' ?>" id="reader-pin" title="Pin"><?= rowActionIcon('pin') ?></button>
             <button type="button" class="icon-btn" id="reader-theme" title="Toggle light/dark"></button>
             <button type="button" class="icon-btn" id="reader-print" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
             <div class="reader__more">
@@ -344,7 +362,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
           </div>
         </div>
         <div class="reader__body" id="reader-body"<?= $selHasHtml ? ' style="display:none"' : '' ?>><?php
-          $selBody = $selected['body_plain'] !== '' ? $selected['body_plain'] : \Barua\Mail\HtmlMailRenderer::toText($selected['body_html'] ?? '');
+          $selBody = $sel['body_plain'] !== '' ? $sel['body_plain'] : \Barua\Mail\HtmlMailRenderer::toText($sel['body_html'] ?? '');
           echo htmlspecialchars($selBody !== '' ? $selBody : '(No text content)');
         ?></div>
         <div class="reader__htmlwrap" id="reader-html"<?= $selHasHtml ? '' : ' style="display:none"' ?>>
@@ -389,11 +407,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         <button class="pill" id="reader-forward"><?= sidebarIcon('forward') ?> Forward</button>
         <button class="pill" id="reader-archive"><?= sidebarIcon('archive') ?> Archive</button>
       </div>
-      <?php else: ?>
-      <div class="reader__content" style="color: var(--text-tertiary); font-size: 14px;">
-        Select a message to read it.
       </div>
-      <?php endif; ?>
     </div>
   </div>
 

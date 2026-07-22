@@ -79,6 +79,24 @@
       if (btn) btn.classList.toggle('is-pinned', !!pinned);
     }
 
+    // The reader starts empty (no auto-opened message) and returns to that empty state
+    // whenever the currently open message is trashed/archived/refiled out of view —
+    // otherwise a deleted mail would stay stuck open in the reader.
+    var readerEmptyEl = document.getElementById('reader-empty');
+    var readerFilledEl = document.getElementById('reader-filled');
+    function showReaderFilled() {
+      if (readerEmptyEl) readerEmptyEl.style.display = 'none';
+      if (readerFilledEl) readerFilledEl.style.display = '';
+    }
+    function showReaderEmpty() {
+      currentMsgId = null;
+      if (readerFilledEl) readerFilledEl.style.display = 'none';
+      if (readerEmptyEl) readerEmptyEl.style.display = '';
+      if (document.body.getAttribute('data-mobile-view') === 'reader') {
+        document.body.setAttribute('data-mobile-view', 'list');
+      }
+    }
+
     function showReaderBody(msg) {
       setReaderPin(msg.pinned);
       var plain = document.getElementById('reader-body');
@@ -170,6 +188,9 @@
     }
 
     function removeRow(row) {
+      // The row being removed may be the one currently open in the reader (trashed,
+      // archived, or refiled out of the active filter/type) — don't leave it stranded.
+      if (row.dataset.msg && parseInt(row.dataset.msg, 10) === currentMsgId) showReaderEmpty();
       row.style.transition = 'opacity 0.15s ease';
       row.style.opacity = '0';
       setTimeout(function () { row.remove(); }, 150);
@@ -304,6 +325,7 @@
         var msg = messages[id];
         if (!msg) return;
         currentMsgId = parseInt(id, 10);
+        showReaderFilled();
 
         // Mark read only after dwelling ~3s (like Outlook): a quick glance that
         // moves on before the timer fires leaves the mail unread and skips the
@@ -393,11 +415,12 @@
     var readerArchive = document.getElementById('reader-archive');
     if (readerArchive) readerArchive.addEventListener('click', function () {
       if (!currentMsgId) return;
-      msgAction(currentMsgId, 'archive', {}, function (res) {
+      var msgId = currentMsgId;
+      msgAction(msgId, 'archive', {}, function (res) {
         if (!res.ok) return;
-        var row = document.querySelector('.mail-row[data-msg="' + currentMsgId + '"]');
-        if (row) removeRow(row);
-        document.body.setAttribute('data-mobile-view', 'list');
+        var row = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
+        if (row) removeRow(row); // also resets the reader if this row was the open one
+        else showReaderEmpty();
       });
     });
 
@@ -503,8 +526,8 @@
                 || (currentType === 'clean' && item.dataset.group === 'people');
               if (currentType !== '' && !stillFits) {
                 var gRow = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
-                if (gRow) removeRow(gRow);
-                document.body.setAttribute('data-mobile-view', 'list');
+                if (gRow) removeRow(gRow); // also resets the reader if this was the open message
+                else showReaderEmpty();
               }
             });
             return;
@@ -513,8 +536,8 @@
           msgAction(msgId, item.dataset.action, {}, function (res) {
             if (!res.ok) return;
             var row = document.querySelector('.mail-row[data-msg="' + msgId + '"]');
-            if (row) removeRow(row);
-            document.body.setAttribute('data-mobile-view', 'list');
+            if (row) removeRow(row); // also resets the reader if this was the open message
+            else showReaderEmpty();
           });
         });
       });

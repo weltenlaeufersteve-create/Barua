@@ -456,6 +456,41 @@
   min-width: 0;
 }
 
+/* Empty reader state — no message auto-opens on load; this is what greets you
+   instead, and what returns whenever the open message is deleted/archived/refiled. */
+.reader__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 32px;
+  text-align: center;
+}
+
+.reader__empty-icon {
+  width: 56px;
+  height: 56px;
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
+
+.reader__empty-text {
+  margin: 0;
+  max-width: 340px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+#reader-filled {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .reader__content {
   flex: 1;
   overflow-y: auto;
