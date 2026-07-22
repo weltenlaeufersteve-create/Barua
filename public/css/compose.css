@@ -1,0 +1,162 @@
+  .compose-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: none;
+    z-index: 200;
+  }
+  .compose-overlay.is-open { display: flex; }
+
+  /* Left column: account (sender) selection, mirrors the main sidebar. */
+  .compose-accounts {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    padding: 18px 12px;
+    overflow-y: auto;
+  }
+  .compose-accounts__title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--text-tertiary); padding: 4px 8px 12px;
+  }
+  .compose-account {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .compose-account:hover { background: var(--hover-bg); }
+  .compose-account.is-active { background: var(--selected-bg); }
+  .compose-account__dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .compose-account__meta { min-width: 0; }
+  .compose-account__name { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .compose-account__email { font-size: 11.5px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Right column: the message. */
+  .compose-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .compose-main__header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+  }
+  .compose-main__header h2 { font-size: 17px; font-weight: 700; margin: 0; }
+  .compose-main__spacer { flex: 1; }
+  .compose__send {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--hover-bg); border: 1.5px solid var(--border); color: var(--text-primary);
+    font-weight: 600; border-radius: 999px; padding: 9px 20px; font-size: 13.5px; cursor: pointer;
+  }
+  .compose__send:hover { background: var(--selected-bg); }
+  /* Neutral button; the paper-plane takes the active account's colour (set in JS). */
+  .compose__send-icon { width: 15px; height: 15px; }
+  .compose__send:disabled { opacity: 0.5; cursor: default; }
+  .compose__status { font-size: 12.5px; color: var(--text-tertiary); }
+  .compose__status.is-error { color: var(--acc-pink); }
+  .compose__close {
+    cursor: pointer; color: var(--text-secondary); font-size: 20px; line-height: 1;
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm);
+  }
+  .compose__close:hover { background: var(--hover-bg); color: var(--text-primary); }
+
+  .compose-fields { padding: 0 24px; }
+  .compose__row {
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border); padding: 12px 0;
+    position: relative;
+  }
+  /* Recipient autocomplete dropdown */
+  .compose-ac {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 30;
+    margin-top: 2px; padding: 5px;
+    background: var(--reader-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: 0 10px 28px rgba(0,0,0,0.3);
+    max-height: 260px; overflow-y: auto; display: none;
+  }
+  .compose-ac.is-open { display: block; }
+  .compose-ac__item {
+    display: flex; flex-direction: column; gap: 1px;
+    padding: 7px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .compose-ac__item.is-active, .compose-ac__item:hover { background: var(--hover-bg); }
+  .compose-ac__name { font-size: 13px; color: var(--text-primary); }
+  .compose-ac__email { font-size: 11.5px; color: var(--text-tertiary); }
+  .compose__row label { font-size: 12.5px; color: var(--text-tertiary); width: 60px; flex-shrink: 0; }
+  .compose__row input {
+    flex: 1; border: none; background: transparent; color: var(--text-primary);
+    font-size: 14px; outline: none;
+  }
+  .compose__cc-toggle { font-size: 12px; color: var(--text-tertiary); cursor: pointer; }
+
+  .compose__textarea {
+    flex: 1; border: none; background: transparent; color: var(--text-primary);
+    font-size: 14.5px; line-height: 1.65; resize: none; outline: none;
+    padding: 20px 24px; font-family: var(--font-sans);
+  }
+
+  /* .compose__attachments / chip styling lives in inbox.css, shared with the received-mail
+     attachment chips so both look identical. */
+  .compose-main__toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 24px; border-top: 1px solid var(--border);
+  }
+  .compose-main__toolbar #compose-attach-btn { position: relative; }
+  .compose-main__toolbar .icon-btn {
+    width: 34px; height: 34px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); cursor: pointer;
+  }
+  .compose-main__toolbar .icon-btn:hover { background: var(--hover-bg); }
+  .compose__draft-status {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .compose__draft-status .ok { color: var(--acc-green); font-weight: 700; }
+
+  /* Minimized: compact panel bottom-right, sender column hidden. */
+  .compose-overlay.is-min {
+    inset: auto;
+    right: 20px; bottom: 0;
+    width: 520px; max-width: calc(100vw - 40px);
+    height: 540px; max-height: calc(100vh - 40px);
+    border: 1px solid var(--border); border-bottom: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  }
+  .compose-overlay.is-min .compose-accounts { display: none; }
+  .compose-overlay.is-min .compose-main__header { padding: 12px 16px; }
+  .compose-overlay.is-min .compose-main__header h2 { font-size: 14px; }
+  .compose-overlay.is-min .compose-fields { padding: 0 16px; }
+  .compose-overlay.is-min .compose__textarea { padding: 14px 16px; }
+  .compose-overlay.is-min .compose-main__toolbar { padding: 10px 16px; }
+
+  .compose__from-mini-wrap { display: none; position: relative; }
+  .compose-overlay.is-min .compose__from-mini-wrap { display: block; }
+
+  .compose__from-mini {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--text-secondary); cursor: pointer;
+  }
+  .compose__from-caret { margin-left: auto; color: var(--text-tertiary); font-size: 11px; }
+
+  .compose__from-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; z-index: 20;
+    background: var(--sidebar-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    padding: 6px; min-width: 260px; margin-top: 4px;
+  }
+  .compose__from-dropdown.is-open { display: block; }
+  .compose__from-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .compose__from-option:hover { background: var(--hover-bg); }
+  .compose__from-option.is-active { background: var(--selected-bg); }
+
+  @media (max-width: 900px) {
+    .compose-accounts { display: none; }
+    .compose__from-mini-wrap { display: block !important; }
+  }

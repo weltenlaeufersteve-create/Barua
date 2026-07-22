@@ -145,6 +145,8 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
 <link rel="stylesheet" href="<?= asset('/css/theme.css') ?>">
 <link rel="stylesheet" href="<?= asset('/css/app.css') ?>">
 <link rel="stylesheet" href="<?= asset('/css/inbox.css') ?>">
+<link rel="stylesheet" href="<?= asset('/css/compose.css') ?>">
+<link rel="stylesheet" href="<?= asset('/css/settings.css') ?>">
 </head>
 <body data-mobile-view="list">
   <div class="app">
