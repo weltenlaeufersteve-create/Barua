@@ -6,6 +6,8 @@
 !/storage/attachments/.gitkeep
 !/storage/drafts/.gitkeep
 !/storage/logs/.gitkeep
+/storage/outbox/*
+!/storage/outbox/.gitkeep
 id_rsa
 id_rsa.pub
 id_ed25519

@@ -102,12 +102,13 @@ $jsDrafts = [];
 if ($isDraftView) {
     foreach ($rows as $row) {
         $jsDrafts[(int) $row['id']] = [
-            'accountId' => (int) $row['account_id'],
-            'to'        => $row['to_addresses'],
-            'cc'        => $row['cc_addresses'],
-            'bcc'       => $row['bcc_addresses'],
-            'subject'   => $row['subject'],
-            'body'      => $row['body_plain'],
+            'accountId'   => (int) $row['account_id'],
+            'to'          => $row['to_addresses'],
+            'cc'          => $row['cc_addresses'],
+            'bcc'         => $row['bcc_addresses'],
+            'subject'     => $row['subject'],
+            'body'        => $row['body_plain'],
+            'attachments' => \Barua\Mail\DraftAttachmentRepository::forDraft((int) $row['id']),
         ];
     }
 }
@@ -581,7 +582,7 @@ $selectedAttachments = $selected ? ($attachmentsByMessage[(int) $selected['id']]
         if (!d || !window.baruaCompose) return;
         window.baruaCompose({
           title: 'Draft', fromAccount: d.accountId, to: d.to, cc: d.cc, bcc: d.bcc,
-          subject: d.subject, body: d.body, draftId: did
+          subject: d.subject, body: d.body, draftId: did, attachments: d.attachments || []
         });
       });
       var delBtn = row.querySelector('.row-action[title="Delete draft"]');

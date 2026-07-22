@@ -118,6 +118,20 @@ CREATE TABLE IF NOT EXISTS drafts (
   CONSTRAINT fk_drafts_account FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Outbound attachments a draft carries; files live in storage/outbox/{draft_id}/.
+-- ON DELETE CASCADE clears the rows when a draft is sent or discarded (files are removed
+-- explicitly in DraftRepository::delete, since cascade doesn't touch the filesystem).
+CREATE TABLE IF NOT EXISTS draft_attachments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  draft_id INT NOT NULL,
+  filename VARCHAR(500),
+  mime_type VARCHAR(255),
+  size_bytes INT,
+  storage_path VARCHAR(1000),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_da_draft FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS attachments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   message_id BIGINT NOT NULL,

@@ -13,6 +13,19 @@ Auth::start();
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
+// "8M" / "64M" / "2G" -> bytes.
+function iniBytes(string $v): int
+{
+    $v = trim($v);
+    $n = (int) $v;
+    switch (strtolower(substr($v, -1))) {
+        case 'g': $n *= 1024; // fallthrough
+        case 'm': $n *= 1024; // fallthrough
+        case 'k': $n *= 1024;
+    }
+    return $n;
+}
+
 if ($path === '/login' && $method === 'GET') {
     $csrfToken = Auth::csrfToken();
     $error = null;
@@ -96,6 +109,70 @@ if ($path === '/drafts/save' && $method === 'POST') {
     return;
 }
 
+if ($path === '/compose/attach' && $method === 'POST') {
+    header('Content-Type: application/json');
+    // A request bigger than post_max_size arrives with $_POST/$_FILES empty and no CSRF —
+    // report the real cause (file too big) rather than a misleading "invalid request".
+    $postMax = iniBytes(ini_get('post_max_size'));
+    if (empty($_POST) && empty($_FILES) && ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0 && $postMax > 0
+        && (int) $_SERVER['CONTENT_LENGTH'] > $postMax) {
+        http_response_code(413);
+        echo json_encode(['ok' => false, 'error' => 'File is too large (server limit ' . ini_get('post_max_size') . ').']);
+        return;
+    }
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    $account = AccountRepository::find((int) ($_POST['account_id'] ?? 0));
+    if (!$account) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Unknown account']);
+        return;
+    }
+    $file = $_FILES['file'] ?? null;
+    if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        $tooBig = in_array($file['error'] ?? 0, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true);
+        echo json_encode(['ok' => false, 'error' => $tooBig
+            ? 'File is too large (server limit ' . ini_get('upload_max_filesize') . ').'
+            : 'Upload failed.']);
+        return;
+    }
+
+    // Attachments hang off a draft; create one if this compose has none yet.
+    $draftId = ($_POST['draft_id'] ?? '') !== '' ? (int) $_POST['draft_id'] : null;
+    if ($draftId === null || !\Barua\Mail\DraftRepository::find($draftId)) {
+        $draftId = \Barua\Mail\DraftRepository::save(null, (int) $account['id'], []);
+    }
+
+    $att = \Barua\Mail\DraftAttachmentRepository::add(
+        $draftId,
+        $file['tmp_name'],
+        (string) $file['name'],
+        (string) ($file['type'] ?? ''),
+        (int) $file['size']
+    );
+    if ($att === null) {
+        echo json_encode(['ok' => false, 'error' => 'Could not store the file.']);
+        return;
+    }
+    echo json_encode(['ok' => true, 'draftId' => $draftId, 'attachment' => $att]);
+    return;
+}
+
+if (preg_match('#^/compose/attach/(\d+)/delete$#', $path, $m) && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    \Barua\Mail\DraftAttachmentRepository::delete((int) $m[1]);
+    echo json_encode(['ok' => true]);
+    return;
+}
+
 if (preg_match('#^/drafts/(\d+)/delete$#', $path, $m) && $method === 'POST') {
     header('Content-Type: application/json');
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
@@ -170,6 +247,10 @@ if ($path === '/compose/send' && $method === 'POST') {
         'in_reply_to' => $_POST['in_reply_to'] ?? '',
         'references'  => $_POST['references'] ?? '',
     ];
+    // A composed mail's attachments live on its draft (created on first attach).
+    if (($_POST['draft_id'] ?? '') !== '') {
+        $payload['attachments'] = \Barua\Mail\DraftAttachmentRepository::forSend((int) $_POST['draft_id']);
+    }
     $result = \Barua\Mail\MailSender::send($account, $payload);
     if ($result['ok']) {
         // Recipients become correspondents immediately (feeds the People group).

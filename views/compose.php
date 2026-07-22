@@ -97,10 +97,30 @@ foreach ($composeAccounts as $ca) {
     padding: 20px 24px; font-family: var(--font-sans);
   }
 
+  .compose__attachments {
+    display: none; flex-wrap: wrap; gap: 8px;
+    padding: 10px 24px 0;
+  }
+  .compose-att {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 8px 6px 11px; border: 1px solid var(--border); border-radius: 999px;
+    background: var(--hover-bg); font-size: 12.5px; max-width: 260px;
+  }
+  .compose-att.is-pending { opacity: 0.6; }
+  .compose-att__name { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .compose-att__size { color: var(--text-tertiary); flex-shrink: 0; }
+  .compose-att__remove {
+    flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+    border: none; background: transparent; color: var(--text-tertiary);
+    cursor: pointer; font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  }
+  .compose-att__remove:hover { background: var(--selected-bg); color: var(--text-primary); }
+
   .compose-main__toolbar {
     display: flex; align-items: center; gap: 8px;
     padding: 12px 24px; border-top: 1px solid var(--border);
   }
+  .compose-main__toolbar #compose-attach-btn { position: relative; }
   .compose-main__toolbar .icon-btn {
     width: 34px; height: 34px; border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;
@@ -219,8 +239,10 @@ foreach ($composeAccounts as $ca) {
 
     <textarea class="compose__textarea" id="compose-textarea" placeholder="Write your message…"></textarea>
 
+    <div class="compose__attachments" id="compose-attachments"></div>
+
     <div class="compose-main__toolbar">
-      <div class="icon-btn" title="Attach file (coming soon)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div>
+      <label class="icon-btn" id="compose-attach-btn" title="Attach file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><input type="file" id="compose-file-input" multiple hidden></label>
       <div class="icon-btn" title="Insert image (coming soon)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
       <span class="compose__draft-status" id="compose-draft-status"></span>
     </div>
@@ -299,8 +321,79 @@ foreach ($composeAccounts as $ca) {
       row.addEventListener('click', function () { selectAccount(row.dataset.accountId, false); });
     });
 
+    // ---- File attachments (uploaded on select, stored against the draft) ----
+    var composeAttachments = []; // {id, filename, size}
+    var attWrapEl = document.getElementById('compose-attachments');
+    function fmtSize(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1024 * 1024) return Math.round(b / 1024) + ' KB';
+      return (Math.round(b / 1024 / 1024 * 10) / 10) + ' MB';
+    }
+    function escAtt(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function renderAttachments() {
+      if (!attWrapEl) return;
+      attWrapEl.innerHTML = composeAttachments.map(function (a) {
+        if (a.pending) {
+          return '<span class="compose-att is-pending"><span class="compose-att__name">' + escAtt(a.filename) + '</span><span class="compose-att__size">uploading…</span></span>';
+        }
+        return '<span class="compose-att" data-att-id="' + a.id + '">'
+          + '<span class="compose-att__name">' + escAtt(a.filename) + '</span>'
+          + '<span class="compose-att__size">' + fmtSize(a.size) + '</span>'
+          + '<button type="button" class="compose-att__remove" title="Remove" data-remove="' + a.id + '">&times;</button>'
+          + '</span>';
+      }).join('');
+      attWrapEl.style.display = composeAttachments.length ? 'flex' : 'none';
+    }
+    function uploadOne(file) {
+      var pending = { pending: true, filename: file.name, tmp: Math.random() };
+      composeAttachments.push(pending);
+      renderAttachments();
+      var fd = new FormData();
+      fd.append('csrf_token', csrf);
+      fd.append('account_id', currentFromId);
+      fd.append('draft_id', currentDraftId || '');
+      fd.append('file', file);
+      fetch('/compose/attach', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          composeAttachments = composeAttachments.filter(function (a) { return a.tmp !== pending.tmp; });
+          if (res.ok) {
+            currentDraftId = res.draftId;               // attach created/linked a draft
+            composeAttachments.push(res.attachment);
+            draftStatusEl.innerHTML = '<span class="ok">✓</span> Draft saved';
+          } else {
+            statusEl.textContent = (file.name + ': ' + (res.error || 'upload failed')).slice(0, 120);
+            statusEl.classList.add('is-error');
+          }
+          renderAttachments();
+        })
+        .catch(function () {
+          composeAttachments = composeAttachments.filter(function (a) { return a.tmp !== pending.tmp; });
+          statusEl.textContent = 'Upload failed (network).';
+          statusEl.classList.add('is-error');
+          renderAttachments();
+        });
+    }
+    var fileInput = document.getElementById('compose-file-input');
+    if (fileInput) fileInput.addEventListener('change', function () {
+      Array.prototype.forEach.call(this.files, uploadOne);
+      this.value = ''; // allow re-picking the same file
+    });
+    if (attWrapEl) attWrapEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-remove]');
+      if (!btn) return;
+      var id = btn.dataset.remove;
+      composeAttachments = composeAttachments.filter(function (a) { return String(a.id) !== String(id); });
+      renderAttachments();
+      var body = new URLSearchParams();
+      body.set('csrf_token', csrf);
+      fetch('/compose/attach/' + id + '/delete', { method: 'POST', body: body }).catch(function () {});
+    });
+
     function openCompose(opts) {
       opts = opts || {};
+      composeAttachments = (opts.attachments || []).slice();
+      renderAttachments();
       titleEl.textContent = opts.title || 'New email';
       toI.value = opts.to || '';
       ccI.value = opts.cc || '';
@@ -334,7 +427,7 @@ foreach ($composeAccounts as $ca) {
       var sig = bodyI.dataset.sig || '';
       var core = bodyI.value;
       if (sig && core.endsWith(sig)) core = core.slice(0, -sig.length);
-      return !!(toI.value.trim() || ccI.value.trim() || bccI.value.trim() || subjI.value.trim() || core.trim());
+      return !!(toI.value.trim() || ccI.value.trim() || bccI.value.trim() || subjI.value.trim() || core.trim() || composeAttachments.length);
     }
 
     function saveDraft() {
@@ -432,7 +525,9 @@ foreach ($composeAccounts as $ca) {
         .then(function (res) {
           if (res.ok) {
             if (draftTimer) { clearTimeout(draftTimer); draftTimer = null; }
-            currentDraftId = null; // sent — the server deleted the draft
+            currentDraftId = null; // sent — the server deleted the draft (+ its attachments)
+            composeAttachments = [];
+            renderAttachments();
             statusEl.textContent = 'Sent ✓';
             setTimeout(function () { panel.classList.remove('is-open'); }, 900);
           } else {

@@ -51,6 +51,8 @@ class DraftRepository
 
     public static function delete(int $id): void
     {
+        // Cascade removes the draft_attachments rows; the files need removing by hand first.
+        DraftAttachmentRepository::deleteFilesForDraft($id);
         Database::connection()->prepare('DELETE FROM drafts WHERE id = ?')->execute([$id]);
     }
 

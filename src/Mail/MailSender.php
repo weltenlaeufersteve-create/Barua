@@ -68,6 +68,18 @@ class MailSender
                 $mailer->Body = $plain;
             }
 
+            // File attachments (each: path + name + mime), stored server-side while composing.
+            foreach ($msg['attachments'] ?? [] as $att) {
+                if (!empty($att['path']) && is_file($att['path'])) {
+                    $mailer->addAttachment(
+                        $att['path'],
+                        $att['name'] ?? basename($att['path']),
+                        PHPMailer::ENCODING_BASE64,
+                        (string) ($att['mime'] ?? '')
+                    );
+                }
+            }
+
             // Threading headers so replies stay in-thread for the recipient.
             if (!empty($msg['in_reply_to'])) {
                 $mailer->addCustomHeader('In-Reply-To', $msg['in_reply_to']);
