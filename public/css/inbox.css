@@ -501,7 +501,7 @@
      20px gap below the line (line-to-attachment), so the line reads closer to the
      attachments than to the mail content it separates from. */
   margin: 55px -32px 0;
-  padding: 20px 32px 0;
+  padding: 20px 32px 22px; /* even breathing room above AND below the chips */
   border-top: 1px solid var(--border);
 }
 .attachment-chip {
@@ -554,8 +554,16 @@
   color: var(--text-tertiary); font-size: 17px; line-height: 1;
 }
 .attachment-chip__remove:hover { background: var(--selected-bg); color: var(--text-primary); }
-/* Compose chips: same look as received-mail chips, minus the click-to-download affordance. */
-.compose__attachments { display: none; flex-wrap: wrap; gap: 8px; padding: 10px 24px 0; }
+/* Compose chips: same look as received-mail chips, minus the click-to-download affordance.
+   Same section framing too — a line above, even space above and below the chips. */
+.compose__attachments {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
 .compose__attachments .attachment-chip { cursor: default; }
 .compose__attachments .attachment-chip.is-pending { opacity: 0.6; }
 .attachment-chip__menu {
