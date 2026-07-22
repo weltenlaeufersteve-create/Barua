@@ -65,10 +65,13 @@ foreach ($composeAccounts as $ca) {
   .compose-main__header h2 { font-size: 17px; font-weight: 700; margin: 0; }
   .compose-main__spacer { flex: 1; }
   .compose__send {
+    display: inline-flex; align-items: center; gap: 8px;
     background: var(--hover-bg); border: 1.5px solid var(--border); color: var(--text-primary);
-    font-weight: 600; border-radius: 999px; padding: 9px 22px; font-size: 13.5px; cursor: pointer;
+    font-weight: 600; border-radius: 999px; padding: 9px 20px; font-size: 13.5px; cursor: pointer;
   }
   .compose__send:hover { background: var(--selected-bg); }
+  /* Neutral button; the paper-plane takes the active account's colour (set in JS). */
+  .compose__send-icon { width: 15px; height: 15px; }
   .compose__send:disabled { opacity: 0.5; cursor: default; }
   .compose__status { font-size: 12.5px; color: var(--text-tertiary); }
   .compose__status.is-error { color: var(--acc-pink); }
@@ -186,7 +189,7 @@ foreach ($composeAccounts as $ca) {
       <h2 id="compose-title">New email</h2>
       <div class="compose-main__spacer"></div>
       <span class="compose__status" id="compose-status"></span>
-      <button class="compose__send" id="compose-send">Send</button>
+      <button class="compose__send" id="compose-send"><svg class="compose__send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</button>
       <span class="compose__close" id="compose-min" title="Minimize / expand">⤡</span>
       <span class="compose__close" id="compose-close" title="Close">✕</span>
     </div>
@@ -286,7 +289,9 @@ foreach ($composeAccounts as $ca) {
       row.classList.add('is-active');
       currentFromId = row.dataset.accountId;
       // Send button border follows the account colour (outline, light theme fill).
-      sendBtn.style.borderColor = row.dataset.colour;
+      // Button stays neutral; the paper-plane icon carries the account colour.
+      var sendIcon = sendBtn.querySelector('.compose__send-icon');
+      if (sendIcon) sendIcon.style.color = row.dataset.colour;
       // Mini-mode sender indicator.
       document.getElementById('mini-dot').style.background = row.dataset.colour;
       document.getElementById('mini-name').textContent = row.querySelector('.compose-account__name').textContent;
