@@ -32,7 +32,7 @@
         <label for="password">Password</label>
         <input type="password" id="password" name="password" autocomplete="current-password" required>
       </div>
-      <button class="btn" type="submit">Sign in</button>
+      <button class="btn btn--icon" type="submit"><?= sidebarIcon('login') ?> Sign in</button>
     </form>
   </div>
 </body>

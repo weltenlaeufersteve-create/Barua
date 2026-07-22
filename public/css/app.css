@@ -65,6 +65,13 @@ body {
 .btn:hover {
   opacity: 0.9;
 }
+.btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn--icon .sidebar__icon { width: 16px; height: 16px; color: inherit; }
 
 .error {
   color: var(--acc-pink);
