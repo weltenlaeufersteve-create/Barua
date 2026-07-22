@@ -79,19 +79,6 @@ body {
   margin-bottom: 16px;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border);
-}
-
-.topbar a {
-  color: var(--text-secondary);
-  font-size: 13px;
-  text-decoration: none;
-}
 
 .mail-row {
   display: flex;
