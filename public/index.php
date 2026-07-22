@@ -109,6 +109,16 @@ if ($path === '/drafts/save' && $method === 'POST') {
     return;
 }
 
+if ($path === '/api/correspondents' && $method === 'GET') {
+    session_write_close(); // read-only
+    header('Content-Type: application/json');
+    echo json_encode([
+        'ok'      => true,
+        'results' => \Barua\Mail\CorrespondentRepository::search($_GET['q'] ?? '', 8),
+    ]);
+    return;
+}
+
 if ($path === '/compose/attach' && $method === 'POST') {
     header('Content-Type: application/json');
     // A request bigger than post_max_size arrives with $_POST/$_FILES empty and no CSRF —

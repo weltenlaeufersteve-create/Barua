@@ -38,4 +38,27 @@ class CorrespondentRepository
     {
         return (int) Database::connection()->query('SELECT COUNT(*) FROM correspondents')->fetchColumn();
     }
+
+    /**
+     * Compose autocomplete: people whose name or email matches, most-recently-used first.
+     * @return array<int, array{name:string, email:string}>
+     */
+    public static function search(string $q, int $limit = 8): array
+    {
+        $q = trim($q);
+        if ($q === '') {
+            return [];
+        }
+        $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $q) . '%';
+        $stmt = Database::connection()->prepare(
+            "SELECT name, email FROM correspondents
+             WHERE email LIKE ? OR name LIKE ?
+             ORDER BY (email LIKE ? OR name LIKE ?) DESC, last_used DESC
+             LIMIT " . (int) $limit
+        );
+        // A prefix match (starts-with) ranks above a mid-string match.
+        $prefix = str_replace(['%', '_'], ['\%', '\_'], $q) . '%';
+        $stmt->execute([$like, $like, $prefix, $prefix]);
+        return array_map(fn($r) => ['name' => (string) $r['name'], 'email' => $r['email']], $stmt->fetchAll());
+    }
 }

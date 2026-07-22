@@ -86,7 +86,24 @@ foreach ($composeAccounts as $ca) {
   .compose__row {
     display: flex; align-items: center; gap: 8px;
     border-bottom: 1px solid var(--border); padding: 12px 0;
+    position: relative;
   }
+  /* Recipient autocomplete dropdown */
+  .compose-ac {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 30;
+    margin-top: 2px; padding: 5px;
+    background: var(--reader-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: 0 10px 28px rgba(0,0,0,0.3);
+    max-height: 260px; overflow-y: auto; display: none;
+  }
+  .compose-ac.is-open { display: block; }
+  .compose-ac__item {
+    display: flex; flex-direction: column; gap: 1px;
+    padding: 7px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .compose-ac__item.is-active, .compose-ac__item:hover { background: var(--hover-bg); }
+  .compose-ac__name { font-size: 13px; color: var(--text-primary); }
+  .compose-ac__email { font-size: 11.5px; color: var(--text-tertiary); }
   .compose__row label { font-size: 12.5px; color: var(--text-tertiary); width: 60px; flex-shrink: 0; }
   .compose__row input {
     flex: 1; border: none; background: transparent; color: var(--text-primary);
@@ -242,6 +259,73 @@ foreach ($composeAccounts as $ca) {
     var toI = document.getElementById('compose-to');
     var ccI = document.getElementById('compose-cc');
     var bccI = document.getElementById('compose-bcc');
+
+    // ---- Recipient autocomplete from correspondents (name/email suggestions) ----
+    function acEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    // The address currently being typed = text after the last comma/semicolon.
+    function acLastToken(v) {
+      var i = Math.max(v.lastIndexOf(','), v.lastIndexOf(';'));
+      return { start: i + 1, text: v.slice(i + 1).trim() };
+    }
+    function attachAutocomplete(input) {
+      var menu = document.createElement('div');
+      menu.className = 'compose-ac';
+      input.parentNode.appendChild(menu);
+      var items = [], active = -1, timer = null;
+
+      function close() { menu.classList.remove('is-open'); menu.innerHTML = ''; items = []; active = -1; }
+      function render(list) {
+        items = list;
+        if (!list.length) { close(); return; }
+        active = 0;
+        menu.innerHTML = list.map(function (r, i) {
+          return '<div class="compose-ac__item' + (i === 0 ? ' is-active' : '') + '" data-i="' + i + '">'
+            + (r.name ? '<span class="compose-ac__name">' + acEsc(r.name) + '</span>' : '')
+            + '<span class="compose-ac__email">' + acEsc(r.email) + '</span></div>';
+        }).join('');
+        menu.classList.add('is-open');
+      }
+      function highlight(i) {
+        var els = menu.querySelectorAll('.compose-ac__item');
+        if (!els.length) return;
+        active = (i + els.length) % els.length;
+        els.forEach(function (e, k) { e.classList.toggle('is-active', k === active); });
+        els[active].scrollIntoView({ block: 'nearest' });
+      }
+      function pick(i) {
+        var r = items[i];
+        if (!r) return;
+        var t = acLastToken(input.value);
+        input.value = input.value.slice(0, t.start) + (t.start > 0 ? ' ' : '') + r.email + ', ';
+        close();
+        input.focus();
+        scheduleAutosave();
+      }
+      input.addEventListener('input', function () {
+        var q = acLastToken(input.value).text;
+        clearTimeout(timer);
+        if (q.length < 1) { close(); return; }
+        timer = setTimeout(function () {
+          fetch('/api/correspondents?q=' + encodeURIComponent(q))
+            .then(function (r) { return r.json(); })
+            .then(function (res) { render((res && res.results) || []); })
+            .catch(function () { close(); });
+        }, 130);
+      });
+      input.addEventListener('keydown', function (e) {
+        if (!menu.classList.contains('is-open')) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); highlight(active + 1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(active - 1); }
+        else if (e.key === 'Enter' || e.key === 'Tab') { if (active >= 0) { e.preventDefault(); pick(active); } }
+        else if (e.key === 'Escape') { close(); }
+      });
+      menu.addEventListener('mousedown', function (e) {
+        var it = e.target.closest('.compose-ac__item');
+        if (it) { e.preventDefault(); pick(parseInt(it.dataset.i, 10)); }
+      });
+      input.addEventListener('blur', function () { setTimeout(close, 150); });
+    }
+    [toI, ccI, bccI].forEach(function (el) { if (el) attachAutocomplete(el); });
     var subjI = document.getElementById('compose-subject');
     var bodyI = document.getElementById('compose-textarea');
     var statusEl = document.getElementById('compose-status');
