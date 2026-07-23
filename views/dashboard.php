@@ -192,11 +192,6 @@ $sel = $selected ?? [
             ['notification', 'notifications', 'Notifications'],
         ];
       ?>
-      <div class="sidebar__section-header">Type</div>
-      <?php foreach ($typeItems as [$tVal, $tIcon, $tLabel]): ?>
-        <a href="<?= htmlspecialchars($urlType($tVal)) ?>" class="sidebar__item<?= $inInbox && $type === $tVal ? ' is-active' : '' ?>"><?= sidebarIcon($tIcon) ?> <?= $tLabel ?> <span class="sidebar__count"><?= MessageRepository::inboxUnread($tVal, $filterPinned, $filterAttachments, $activeAccountId) ?: '' ?></span></a>
-      <?php endforeach; ?>
-
       <?php
         // FILTER narrows further — independent switches, combinable with each other and
         // with any type. No counts here: a toggle only needs a visible on/off state.
@@ -208,6 +203,11 @@ $sel = $selected ?? [
       <div class="sidebar__section-header">Filter</div>
       <?php foreach ($toggleItems as [$fIcon, $fUrl, $fOn, $fLabel]): ?>
         <a href="<?= htmlspecialchars($fUrl) ?>" class="sidebar__item sidebar__toggle<?= $fOn ? ' is-on' : '' ?>" role="switch" aria-checked="<?= $fOn ? 'true' : 'false' ?>"><?= sidebarIcon($fIcon) ?> <?= $fLabel ?> <span class="switch" aria-hidden="true"><span class="switch__knob"></span></span></a>
+      <?php endforeach; ?>
+
+      <div class="sidebar__section-header">Type</div>
+      <?php foreach ($typeItems as [$tVal, $tIcon, $tLabel]): ?>
+        <a href="<?= htmlspecialchars($urlType($tVal)) ?>" class="sidebar__item<?= $inInbox && $type === $tVal ? ' is-active' : '' ?>"><?= sidebarIcon($tIcon) ?> <?= $tLabel ?> <span class="sidebar__count"><?= MessageRepository::inboxUnread($tVal, $filterPinned, $filterAttachments, $activeAccountId) ?: '' ?></span></a>
       <?php endforeach; ?>
 
       <div class="sidebar__section-header">Folder</div>
