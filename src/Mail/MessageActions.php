@@ -183,7 +183,10 @@ class MessageActions
                 $folder = $client->getFolderByPath($target->path);
                 // Whole folder, not just the sync window — "empty" means empty. Headers only
                 // (no body) keep it light; one expunge at the end instead of per message.
-                $messages = $folder->query()->setFetchBody(false)->setFetchFlags(false)->get();
+                // ->all() is required: a query with no search key sends a bare IMAP SEARCH,
+                // which stricter servers reject ("expected CHARSET / search-key"). Mirrors
+                // SyncService's messages()->all() pattern.
+                $messages = $folder->messages()->all()->setFetchBody(false)->setFetchFlags(false)->get();
                 foreach ($messages as $message) {
                     $message->setFlag('Deleted');
                     $deleted++;
