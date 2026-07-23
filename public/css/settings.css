@@ -142,7 +142,7 @@
   .set-account__edit .sidebar__icon,
   .set-account__remove .sidebar__icon { width: 16px; height: 16px; color: inherit; }
   .set-add-link {
-    display: inline-block; margin-top: 18px; font-size: 13px; color: var(--accent);
+    display: inline-block; margin-top: 18px; font-size: 13px; color: var(--accent-fg);
     text-decoration: none;
     background: none; border: none; padding: 0; cursor: pointer; font: inherit;
   }
@@ -153,7 +153,7 @@
   .set-detect .set-save { flex-shrink: 0; }
   .set-detect__status { font-size: 12px; color: var(--text-tertiary); }
   .set-detect__status.is-error { color: var(--danger, #d9534f); }
-  .set-detect__status.is-ok { color: var(--accent); }
+  .set-detect__status.is-ok { color: var(--accent-fg); }
 
   .set-account__editform { display: none; padding: 4px 0 16px; }
   .set-account__editform.is-open { display: block; }
@@ -209,8 +209,8 @@
   }
   .appearance-opt:hover { background: var(--hover-bg); }
   .appearance-opt.is-active {
-    border-color: var(--accent); color: var(--text-primary);
-    box-shadow: 0 0 0 1px var(--accent);
+    border-color: var(--accent-fg); color: var(--text-primary);
+    box-shadow: 0 0 0 1px var(--accent-fg);
   }
   .tint-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px var(--border); }
 
@@ -241,7 +241,7 @@
   .set-about__features { margin: 0; padding-left: 18px; }
   .set-about__features li { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
   .set-about__line { font-size: 13.5px; color: var(--text-primary); margin: 2px 0; }
-  .set-about__line a { color: var(--accent); text-decoration: none; }
+  .set-about__line a { color: var(--accent-fg); text-decoration: none; }
   .set-about__line a:hover { text-decoration: underline; }
 
   /* ---- Mobile: full screen, tabs become a scrollable bar on top, forms single-column ---- */

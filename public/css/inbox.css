@@ -9,6 +9,11 @@
   width: 248px;
   flex-shrink: 0;
   background: var(--sidebar-bg);
+  /* Always dark (Spark-style rail, even in light mode) — see --sidebar-* tokens in
+     theme.css. Default text colour for anything here without its own rule
+     (e.g. .sidebar__title) must come from --sidebar-text-primary, not the page's
+     mode-following --text-primary, which would be unreadable against it in light mode. */
+  color: var(--sidebar-text-primary);
   border-right: 1px solid var(--border);
   overflow: hidden;
   display: flex;
@@ -42,22 +47,25 @@
   padding: 7px 8px;
   border-radius: var(--radius-sm);
   font-size: 13.5px;
-  color: var(--text-secondary);
+  color: var(--sidebar-text-secondary);
   cursor: pointer;
   text-decoration: none;
 }
 
-.sidebar__item:hover { background: var(--hover-bg); }
+/* The sidebar is always a dark rail (Spark-style), in every theme mode — so it needs
+   its own --sidebar-* text/hover/selected tokens instead of the mode-following
+   --text-*, --hover-bg, --selected-bg used everywhere else on the page. */
+.sidebar__item:hover { background: var(--sidebar-hover-bg); }
 .sidebar__item.is-active {
-  background: var(--selected-bg);
-  color: var(--text-primary);
+  background: var(--sidebar-selected-bg);
+  color: var(--sidebar-text-primary);
   font-weight: 600;
 }
 
 .sidebar__count {
   margin-left: auto;
   font-size: 11.5px;
-  color: var(--text-tertiary);
+  color: var(--sidebar-text-tertiary);
 }
 
 /* FILTER entries are switches, not destinations — they narrow whatever the TYPE above
@@ -81,10 +89,12 @@
   background: var(--switch-knob);
   transition: transform 0.15s ease;
 }
-.sidebar__toggle.is-on .switch { background: var(--accent); }
+/* --accent-fg, not --accent: the knob is white (--switch-knob), so a neutral theme's
+   white --accent track would swallow it — the foreground gray keeps the knob visible. */
+.sidebar__toggle.is-on .switch { background: var(--accent-fg); }
 .sidebar__toggle.is-on .switch__knob { transform: translateX(13px); }
-.sidebar__toggle.is-on { color: var(--text-primary); }
-.sidebar__toggle.is-on .sidebar__icon { color: var(--accent); }
+.sidebar__toggle.is-on { color: var(--sidebar-text-primary); }
+.sidebar__toggle.is-on .sidebar__icon { color: var(--accent-fg); }
 
 .sidebar__icon {
   width: 16px;
@@ -92,7 +102,10 @@
   flex-shrink: 0;
   color: var(--text-tertiary);
 }
-.sidebar__item.is-active .sidebar__icon { color: var(--text-primary); }
+/* .sidebar__icon is reused outside the sidebar (mail rows, attachment chips, reader
+   menu, pills…) with its own colour there — this only overrides the real sidebar nav. */
+.sidebar .sidebar__icon { color: var(--sidebar-text-tertiary); }
+.sidebar__item.is-active .sidebar__icon { color: var(--sidebar-text-primary); }
 
 /* Account avatar in the sidebar — initial on the account colour now,
    Gravatar image later (same box, just swap in an <img>). */
@@ -128,7 +141,7 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--text-tertiary);
+  color: var(--sidebar-text-tertiary);
   padding: 12px 8px 6px;
   text-transform: uppercase;
 }
@@ -182,8 +195,11 @@
   gap: 5px;
   padding: 5px 10px;
   border-radius: 999px;
-  /* Reader surface, not --hover-bg: it reads as a distinct layer against the list. */
-  background: var(--reader-bg);
+  /* Its own token, not --reader-bg: reader is deliberately the ramp's darkest step in
+     dark mode, so reusing it here made the pill look sunken instead of a raised layer
+     distinct from the list. --pill-bg is one step lighter there (identical to
+     --reader-bg in light mode, where reader is already the lightest step). */
+  background: var(--pill-bg);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
@@ -227,9 +243,9 @@
   background: var(--switch-knob);
   transition: transform 0.15s ease;
 }
-.filter-pill--toggle.is-on { border-color: var(--accent); color: var(--accent); }
-.filter-pill--toggle.is-on .sidebar__icon { color: var(--accent); }
-.filter-pill--toggle.is-on .switch { background: var(--accent); }
+.filter-pill--toggle.is-on { border-color: var(--accent-fg); color: var(--accent-fg); }
+.filter-pill--toggle.is-on .sidebar__icon { color: var(--accent-fg); }
+.filter-pill--toggle.is-on .switch { background: var(--accent-fg); }
 .filter-pill--toggle.is-on .switch__knob { transform: translateX(10px); }
 /* Desktop pills stay compact; on mobile they grow back to a comfortable tap size. */
 @media (max-width: 900px) {
@@ -253,7 +269,7 @@
   line-height: 1.6;
 }
 .list-empty strong { color: var(--text-secondary); }
-.list-empty a { color: var(--accent); display: inline-block; margin-top: 8px; }
+.list-empty a { color: var(--accent-fg); display: inline-block; margin-top: 8px; }
 
 /* Bottom notification strip — slides up in the theme accent for new mail / events. */
 .list-notify {
@@ -374,8 +390,10 @@
 /* Filled = the result of clicking (hover previews it). */
 .row-action:hover .ra-icon { fill: currentColor; }
 
-/* A pinned mail: pin stays visible + filled in the accent colour. */
-.row-action--pin.is-pinned { opacity: 1; color: var(--accent); }
+/* A pinned mail: pin stays visible + filled in the accent colour. Uses --accent-fg
+   (a foreground tone) not --accent (a fill) — they differ only for the neutral theme,
+   where --accent is white and would make the pin vanish/glare. */
+.row-action--pin.is-pinned { opacity: 1; color: var(--accent-fg); }
 .row-action--pin.is-pinned .ra-icon { fill: currentColor; }
 /* Hovering an active pin lifts the fill off — a preview of un-pinning. */
 .row-action--pin.is-pinned:hover .ra-icon { fill: none; }
@@ -754,7 +772,7 @@
   color: var(--text-tertiary);
 }
 .reader__imgbar span {
-  color: var(--accent);
+  color: var(--accent-fg);
   cursor: pointer;
 }
 .reader__floatbar {
@@ -777,7 +795,7 @@
   transition: fill 0.12s ease;
 }
 .reader-pin:hover .ra-icon { fill: currentColor; }
-.reader-pin.is-pinned { color: var(--accent); }
+.reader-pin.is-pinned { color: var(--accent-fg); }
 .reader-pin.is-pinned .ra-icon { fill: currentColor; }
 .reader-pin.is-pinned:hover .ra-icon { fill: none; }
 
