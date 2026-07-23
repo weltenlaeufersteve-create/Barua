@@ -114,6 +114,43 @@ class MessageActions
     }
 
     /**
+     * True number of messages currently in a Trash/Spam folder on the server for the
+     * accounts in scope — a lightweight IMAP EXAMINE (no message fetch), used to show an
+     * honest count in the empty-confirmation dialog (the local cache can hold fewer than
+     * the server actually has). Best-effort: an unreachable account is skipped, not fatal.
+     *
+     * @return array{ok: bool, count?: int, error?: string}
+     */
+    public static function serverCount(string $role, ?int $accountId = null): array
+    {
+        if (!in_array($role, ['trash', 'spam'], true)) {
+            return ['ok' => false, 'error' => 'Only Trash and Spam can be counted here'];
+        }
+
+        $accounts = $accountId !== null
+            ? array_values(array_filter([AccountRepository::find($accountId)]))
+            : AccountRepository::all();
+
+        $count = 0;
+        foreach ($accounts as $account) {
+            try {
+                $client = SyncService::makeClient($account);
+                $client->connect();
+                $target = FolderResolver::find($client, $role);
+                if ($target !== null) {
+                    $status = $target->examine();
+                    $count += (int) ($status['exists'] ?? 0);
+                }
+                $client->disconnect();
+            } catch (\Throwable $e) {
+                // Skip this account for the count; emptyRole() has its own error handling.
+            }
+        }
+
+        return ['ok' => true, 'count' => $count];
+    }
+
+    /**
      * Permanently empty a Trash or Spam folder for the accounts in scope (one account, or
      * all when $accountId is null). Flags every message in the folder \Deleted and expunges
      * on the server — irreversible — then clears the matching cache rows. Guarded to those

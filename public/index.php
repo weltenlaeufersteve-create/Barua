@@ -405,6 +405,22 @@ if (preg_match('#^/messages/(\d+)/(pin|archive|trash|spam|read|group)$#', $path,
     return;
 }
 
+// True server-side message count for a Trash/Spam folder (scope via ?account) — read-only
+// IMAP EXAMINE, used to show an honest number in the empty-confirmation dialog before the
+// destructive POST below. GET + login-gated, no state change, so no CSRF needed.
+if ($path === '/messages/empty-count' && $method === 'GET') {
+    header('Content-Type: application/json');
+    session_write_close();
+    $role = (string) ($_GET['role'] ?? '');
+    $account = isset($_GET['account']) && $_GET['account'] !== '' ? (int) $_GET['account'] : null;
+    $result = \Barua\Mail\MessageActions::serverCount($role, $account);
+    if (!$result['ok']) {
+        http_response_code(422);
+    }
+    echo json_encode($result);
+    return;
+}
+
 // Empty a whole Trash/Spam folder (permanent). Scope follows the ?account param like the
 // views: a single account, or all accounts when absent. Destructive + irreversible — the
 // client asks for confirmation first; the role guard lives in MessageActions::emptyRole.

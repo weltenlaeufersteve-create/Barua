@@ -335,6 +335,9 @@
   cursor: default;
 }
 .icon-btn--danger:disabled:hover { background: transparent; }
+/* Brief loading pulse while fetching the true server count before the confirm dialog. */
+@keyframes danger-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.icon-btn--danger.is-loading { animation: danger-pulse 0.8s ease-in-out infinite; opacity: 1; }
 
 .mail-list__date-group {
   font-size: 11px;

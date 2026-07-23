@@ -787,34 +787,58 @@
     var emptyBtn = document.getElementById('empty-folder');
     if (emptyBtn) emptyBtn.addEventListener('click', function () {
       if (emptyBtn.disabled) return;
-      var count = parseInt(emptyBtn.dataset.count, 10) || 0;
       var label = emptyBtn.dataset.label;   // "Trash" / "Spam"
       var scope = emptyBtn.dataset.scope;   // account label or "all accounts"
-      baruaConfirm({
-        title: 'Empty ' + label,
-        text: 'Permanently delete ' + count + ' message' + (count === 1 ? '' : 's')
-          + ' in ' + label + ' (' + scope + ').\n\nThis cannot be undone.',
-        confirmLabel: 'Empty ' + label,
-        danger: true,
-        onConfirm: function () {
-          emptyBtn.disabled = true;
-          var body = new URLSearchParams();
-          body.set('csrf_token', mainCsrf);
-          body.set('role', emptyBtn.dataset.role);
-          body.set('account', emptyBtn.dataset.account); // '' = all accounts
-          fetch('/messages/empty', { method: 'POST', body: body })
-            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
-            .then(function (res) {
-              if (res.ok) { window.location.reload(); return; }
-              emptyBtn.disabled = false;
-              window.alert('Could not empty ' + label + ': ' + (res.error || 'unknown error'));
-            })
-            .catch(function () {
-              emptyBtn.disabled = false;
-              window.alert('Network error while emptying ' + label + '.');
-            });
-        }
-      });
+      var cached = parseInt(emptyBtn.dataset.count, 10) || 0;
+
+      function openDialog(count) {
+        baruaConfirm({
+          title: 'Empty ' + label,
+          text: 'Permanently delete ' + count + ' message' + (count === 1 ? '' : 's')
+            + ' in ' + label + ' (' + scope + ').\n\nThis cannot be undone.',
+          confirmLabel: 'Empty ' + label,
+          danger: true,
+          onConfirm: function () {
+            emptyBtn.disabled = true;
+            var body = new URLSearchParams();
+            body.set('csrf_token', mainCsrf);
+            body.set('role', emptyBtn.dataset.role);
+            body.set('account', emptyBtn.dataset.account); // '' = all accounts
+            fetch('/messages/empty', { method: 'POST', body: body })
+              .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+              .then(function (res) {
+                if (res.ok) { window.location.reload(); return; }
+                emptyBtn.disabled = false;
+                window.alert('Could not empty ' + label + ': ' + (res.error || 'unknown error'));
+              })
+              .catch(function () {
+                emptyBtn.disabled = false;
+                window.alert('Network error while emptying ' + label + '.');
+              });
+          }
+        });
+      }
+
+      // Ask the server for the TRUE folder count first (the cached badge can undercount),
+      // showing a brief loading state on the button. Fall back to the cached number if the
+      // count request fails, so the dialog still opens.
+      var params = new URLSearchParams();
+      params.set('role', emptyBtn.dataset.role);
+      params.set('account', emptyBtn.dataset.account);
+      emptyBtn.classList.add('is-loading');
+      emptyBtn.disabled = true;
+      fetch('/messages/empty-count?' + params.toString())
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (res) {
+          emptyBtn.classList.remove('is-loading');
+          emptyBtn.disabled = false;
+          openDialog(res && res.ok ? res.count : cached);
+        })
+        .catch(function () {
+          emptyBtn.classList.remove('is-loading');
+          emptyBtn.disabled = false;
+          openDialog(cached);
+        });
     });
 
     // Gentle background heartbeat (cron only produces mail every ~3 min) + instant catch-up
