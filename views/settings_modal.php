@@ -246,52 +246,63 @@
     <div class="settings-panel" data-panel="security">
       <div class="set-panel-head">
         <h3 class="set-panel-title">Security</h3>
-        <p class="set-panel-desc">Sign-in attempts and sensitive actions — with when, where and what.</p>
+        <p class="set-panel-desc">One timeline of sign-ins and sensitive actions — each classified, newest first, with when, where and what.</p>
       </div>
-
-      <div class="set-subhead">Sign-in attempts</div>
-      <?php $loginLog = \Barua\Auth\Auth::recentLoginAttempts(100); ?>
-      <?php if (empty($loginLog)): ?>
-        <p style="color: var(--text-tertiary);">No sign-in attempts recorded yet.</p>
-      <?php else: ?>
-        <div class="set-log">
-          <?php foreach ($loginLog as $a): ?>
-            <div class="set-log__row">
-              <span class="set-log__badge set-log__badge--<?= htmlspecialchars($a['outcome']) ?>"><?= htmlspecialchars(ucfirst($a['outcome'])) ?></span>
-              <div class="set-log__main">
-                <div class="set-log__top"><span class="set-log__time"><?= htmlspecialchars($a['time']) ?></span><span class="set-log__ip"><?= htmlspecialchars($a['xff'] !== '' ? $a['xff'] : $a['ip']) ?></span></div>
-                <div class="set-log__meta">user <strong><?= htmlspecialchars($a['user']) ?></strong> · <?= htmlspecialchars($a['ua'] !== '' ? $a['ua'] : 'unknown device') ?></div>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-
-      <div class="set-subhead" style="margin-top:22px;">Activity</div>
       <?php
-        $activityLog = \Barua\Security\ActivityLog::recent(100);
-        // action token → [badge label, badge modifier, human sentence prefix]
+        // Merge the two sources (sign-in attempts + activity) into one classified,
+        // time-sorted timeline. Each row is normalised to: badge label, colour modifier,
+        // a human sentence, plus time/ip for the top line and a sortable timestamp.
+        $entries = [];
+
+        foreach (\Barua\Auth\Auth::recentLoginAttempts(200) as $a) {
+            $verb = [
+                'success' => 'Signed in',
+                'fail'    => 'Failed sign-in',
+                'blocked' => 'Blocked sign-in (rate-limited)',
+            ][$a['outcome']] ?? 'Sign-in';
+            $entries[] = [
+                'sort'     => strtotime($a['time']) ?: 0,
+                'time'     => $a['time'],
+                'ip'       => $a['xff'] !== '' ? $a['xff'] : $a['ip'],
+                'badge'    => 'Login',
+                'mod'      => $a['outcome'] === 'success' ? 'success' : 'danger',
+                'sentence' => $verb . ' — user ' . $a['user'] . ' · ' . ($a['ua'] !== '' ? $a['ua'] : 'unknown device'),
+            ];
+        }
+
+        // activity action → [badge label, colour modifier, human sentence prefix]
         $actMap = [
             'empty'          => ['Emptied',  'danger',  'Emptied '],
             'account_add'    => ['Account',  'success', 'Added account '],
             'account_edit'   => ['Account',  'neutral', 'Edited account '],
             'account_remove' => ['Account',  'danger',  'Removed account '],
-            'logout'         => ['Sign-out', 'neutral', 'Signed out'],
+            'logout'         => ['Logout',   'neutral', 'Signed out'],
         ];
+        foreach (\Barua\Security\ActivityLog::recent(200) as $a) {
+            [$badge, $mod, $prefix] = $actMap[$a['action']] ?? [ucfirst($a['action']), 'neutral', $a['action'] . ' '];
+            $entries[] = [
+                'sort'     => strtotime($a['time']) ?: 0,
+                'time'     => $a['time'],
+                'ip'       => $a['xff'] !== '' ? $a['xff'] : $a['ip'],
+                'badge'    => $badge,
+                'mod'      => $mod,
+                'sentence' => $prefix . $a['detail'],
+            ];
+        }
+
+        usort($entries, fn($x, $y) => $y['sort'] <=> $x['sort']); // newest first (stable on PHP 8)
+        $entries = array_slice($entries, 0, 150);
       ?>
-      <?php if (empty($activityLog)): ?>
-        <p style="color: var(--text-tertiary);">No activity recorded yet.</p>
+      <?php if (empty($entries)): ?>
+        <p style="color: var(--text-tertiary);">Nothing logged yet.</p>
       <?php else: ?>
         <div class="set-log">
-          <?php foreach ($activityLog as $a):
-            [$badge, $mod, $prefix] = $actMap[$a['action']] ?? [ucfirst($a['action']), 'neutral', $a['action'] . ' '];
-            $sentence = $prefix . $a['detail'];
-          ?>
+          <?php foreach ($entries as $ev): ?>
             <div class="set-log__row">
-              <span class="set-log__badge set-log__badge--<?= htmlspecialchars($mod) ?>"><?= htmlspecialchars($badge) ?></span>
+              <span class="set-log__badge set-log__badge--<?= htmlspecialchars($ev['mod']) ?>"><?= htmlspecialchars($ev['badge']) ?></span>
               <div class="set-log__main">
-                <div class="set-log__top"><span class="set-log__time"><?= htmlspecialchars($a['time']) ?></span><span class="set-log__ip"><?= htmlspecialchars($a['xff'] !== '' ? $a['xff'] : $a['ip']) ?></span></div>
-                <div class="set-log__meta"><?= htmlspecialchars($sentence) ?></div>
+                <div class="set-log__top"><span class="set-log__time"><?= htmlspecialchars($ev['time']) ?></span><span class="set-log__ip"><?= htmlspecialchars($ev['ip']) ?></span></div>
+                <div class="set-log__meta"><?= htmlspecialchars($ev['sentence']) ?></div>
               </div>
             </div>
           <?php endforeach; ?>
