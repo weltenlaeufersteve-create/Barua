@@ -59,6 +59,7 @@ class Auth
 
     public static function logout(): void
     {
+        \Barua\Security\ActivityLog::log('logout'); // before the session is cleared (reads user)
         $_SESSION = [];
         session_destroy();
     }

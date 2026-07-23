@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" font-family="Inter, Arial, sans-serif">
+<rect width="1200" height="760" fill="#303337"/>
+<rect x="0" y="0" width="248" height="760" fill="#1D1F22"/>
+<rect x="648" y="0" width="552" height="760" fill="#0F0F11"/>
+<line x1="248" y1="0" x2="248" y2="760" stroke="#3B3E43" stroke-width="1"/>
+<line x1="648" y1="0" x2="648" y2="760" stroke="#3B3E43" stroke-width="1"/>
+<text x="18" y="34" font-size="15" font-weight="700" fill="#DDDEE0" text-anchor="start">BARUA</text>
+<text x="70" y="34" font-size="15" font-weight="400" fill="#DDDEE0" text-anchor="start">MAIL</text>
+<rect x="12" y="52" width="224" height="34" rx="8" fill="#3B3E43"/>
+<text x="40" y="74" font-size="13.5" font-weight="600" fill="#DDDEE0" text-anchor="start">Inbox</text>
+<text x="224" y="74" font-size="12" font-weight="400" fill="#71757A" text-anchor="end">7</text>
+<rect x="18" y="60" width="16" height="13" rx="2" fill="none" stroke="#95989E" stroke-width="1.4"/>
+<text x="18" y="108" font-size="11" font-weight="600" fill="#71757A" text-anchor="start">ACCOUNTS</text>
+<circle cx="29" cy="122" r="11" fill="#0BA4BC"/>
+<text x="48" y="126" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Stephan Auner</text>
+<text x="224" y="126" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">3</text>
+<circle cx="29" cy="152" r="11" fill="#D67433"/>
+<text x="48" y="156" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">congstar</text>
+<circle cx="29" cy="182" r="11" fill="#BA72C8"/>
+<text x="48" y="186" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Weltenläufer</text>
+<text x="224" y="186" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">5</text>
+<text x="18" y="226" font-size="11" font-weight="600" fill="#71757A" text-anchor="start">TYPE</text>
+<rect x="18" y="231" width="15" height="15" rx="3" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="244" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Clean Inbox</text>
+<text x="224" y="244" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">42</text>
+<rect x="18" y="261" width="15" height="15" rx="3" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="274" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Correspondents</text>
+<text x="224" y="274" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">12</text>
+<rect x="18" y="291" width="15" height="15" rx="3" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="304" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Newsletters</text>
+<text x="224" y="304" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">8</text>
+<rect x="18" y="321" width="15" height="15" rx="3" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="334" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Notifications</text>
+<text x="18" y="374" font-size="11" font-weight="600" fill="#71757A" text-anchor="start">FILTER</text>
+<path d="M18 382 l7 -4 l7 4 l0 12 l-7 -4 l-7 4 z" fill="none" stroke="#BBBEC2" stroke-width="1.3"/>
+<text x="48" y="392" font-size="13.5" font-weight="400" fill="#DDDEE0" text-anchor="start">Pinned</text>
+<rect x="194" y="379" width="30" height="17" rx="8.5" fill="#BBBEC2"/>
+<circle cx="215.5" cy="387.5" r="6.5" fill="#FCFCFC"/>
+<path d="M18 412 l7 -4 l7 4 l0 12 l-7 -4 l-7 4 z" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="422" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Attachments</text>
+<rect x="194" y="409" width="30" height="17" rx="8.5" fill="#2A2D31"/>
+<circle cx="202.5" cy="417.5" r="6.5" fill="#FCFCFC"/>
+<text x="18" y="462" font-size="11" font-weight="600" fill="#71757A" text-anchor="start">FOLDER</text>
+<rect x="18" y="468" width="15" height="13" rx="2" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="480" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Drafts</text>
+<rect x="18" y="498" width="15" height="13" rx="2" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="510" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Sent</text>
+<rect x="18" y="528" width="15" height="13" rx="2" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="540" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Archive</text>
+<rect x="18" y="558" width="15" height="13" rx="2" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="570" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Spam</text>
+<rect x="18" y="588" width="15" height="13" rx="2" fill="none" stroke="#71757A" stroke-width="1.3"/>
+<text x="48" y="600" font-size="13.5" font-weight="400" fill="#95989E" text-anchor="start">Trash</text>
+<line x1="12" y1="708" x2="236" y2="708" stroke="#3B3E43" stroke-width="1"/>
+<text x="48" y="732" font-size="13" font-weight="400" fill="#95989E" text-anchor="start">Settings</text>
+<text x="268" y="40" font-size="19" font-weight="700" fill="#DDDEE0" text-anchor="start">Inbox</text>
+<text x="326" y="40" font-size="12.5" font-weight="400" fill="#71757A" text-anchor="start">Unified</text>
+<circle cx="624" cy="34" r="9" fill="none" stroke="#95989E" stroke-width="1.5"/>
+<circle cx="590" cy="34" r="9" fill="none" stroke="#95989E" stroke-width="1.5"/>
+<circle cx="556" cy="34" r="9" fill="none" stroke="#95989E" stroke-width="1.5"/>
+<rect x="268" y="58" width="62" height="26" rx="13" fill="#FCFCFC"/>
+<text x="299" y="75" font-size="12" font-weight="600" fill="#1D1F22" text-anchor="middle">Inbox</text>
+<rect x="338" y="58" width="62" height="26" rx="13" fill="#1D1F22" stroke="#3B3E43" stroke-width="1"/>
+<text x="369" y="75" font-size="12" font-weight="500" fill="#95989E" text-anchor="middle">Clean</text>
+<rect x="408" y="58" width="126.8" height="26" rx="13" fill="#1D1F22" stroke="#3B3E43" stroke-width="1"/>
+<text x="471.4" y="75" font-size="12" font-weight="500" fill="#95989E" text-anchor="middle">Correspondents</text>
+<rect x="542.8" y="58" width="105.2" height="26" rx="13" fill="#1D1F22" stroke="#3B3E43" stroke-width="1"/>
+<text x="595.4" y="75" font-size="12" font-weight="500" fill="#95989E" text-anchor="middle">Newsletters</text>
+<text x="268" y="98" font-size="11" font-weight="600" fill="#71757A" text-anchor="start">TODAY</text>
+<rect x="248" y="106" width="400" height="74" fill="#2A2D31"/>
+<rect x="260" y="112" width="4" height="56" rx="2" fill="#0BA4BC"/>
+<circle cx="280" cy="120" r="4" fill="#FCFCFC"/>
+<text x="290" y="124" font-size="13.5" font-weight="700" fill="#DDDEE0" text-anchor="start">Stephan Auner</text>
+<text x="632" y="124" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">16:41</text>
+<text x="276" y="143" font-size="13" font-weight="500" fill="#95989E" text-anchor="start">Rechnung Juli 2026</text>
+<text x="276" y="161" font-size="12" font-weight="400" fill="#71757A" text-anchor="start">Anbei findest du die Rechnung für den Monat…</text>
+<line x1="276" y1="170" x2="632" y2="170" stroke="#3B3E43" stroke-width="1" opacity="0.5"/>
+<rect x="260" y="186" width="4" height="56" rx="2" fill="#D67433"/>
+<text x="276" y="198" font-size="13.5" font-weight="600" fill="#DDDEE0" text-anchor="start">congstar</text>
+<text x="632" y="198" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">03:24</text>
+<text x="276" y="217" font-size="13" font-weight="500" fill="#95989E" text-anchor="start">Deine congstar Rechnung</text>
+<text x="276" y="235" font-size="12" font-weight="400" fill="#71757A" text-anchor="start">Kundennummer 2208447353 — deine Rechnung…</text>
+<line x1="276" y1="244" x2="632" y2="244" stroke="#3B3E43" stroke-width="1" opacity="0.5"/>
+<rect x="260" y="260" width="4" height="56" rx="2" fill="#BA72C8"/>
+<text x="276" y="272" font-size="13.5" font-weight="600" fill="#DDDEE0" text-anchor="start">Weltenläufer</text>
+<text x="632" y="272" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">Yesterday</text>
+<text x="276" y="291" font-size="13" font-weight="500" fill="#95989E" text-anchor="start">Newsletter Zusammenfassung</text>
+<text x="276" y="309" font-size="12" font-weight="400" fill="#71757A" text-anchor="start">Die wichtigsten Neuigkeiten dieser Woche…</text>
+<line x1="276" y1="318" x2="632" y2="318" stroke="#3B3E43" stroke-width="1" opacity="0.5"/>
+<rect x="260" y="334" width="4" height="56" rx="2" fill="#5BA74F"/>
+<text x="276" y="346" font-size="13.5" font-weight="600" fill="#DDDEE0" text-anchor="start">GLS Bank</text>
+<text x="632" y="346" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">Yesterday</text>
+<text x="276" y="365" font-size="13" font-weight="500" fill="#95989E" text-anchor="start">Kontoauszug verfügbar</text>
+<text x="276" y="383" font-size="12" font-weight="400" fill="#71757A" text-anchor="start">Ihr neuer Kontoauszug steht zum Abruf bereit…</text>
+<line x1="276" y1="392" x2="632" y2="392" stroke="#3B3E43" stroke-width="1" opacity="0.5"/>
+<rect x="260" y="408" width="4" height="56" rx="2" fill="#6A8DEB"/>
+<text x="276" y="420" font-size="13.5" font-weight="600" fill="#DDDEE0" text-anchor="start">Amazon</text>
+<text x="632" y="420" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">Mon</text>
+<text x="276" y="439" font-size="13" font-weight="500" fill="#95989E" text-anchor="start">Ihre Bestellung wurde versandt</text>
+<text x="276" y="457" font-size="12" font-weight="400" fill="#71757A" text-anchor="start">Voraussichtliche Lieferung: Donnerstag…</text>
+<line x1="276" y1="466" x2="632" y2="466" stroke="#3B3E43" stroke-width="1" opacity="0.5"/>
+<rect x="260" y="482" width="4" height="56" rx="2" fill="#0BA4BC"/>
+<text x="276" y="494" font-size="13.5" font-weight="600" fill="#DDDEE0" text-anchor="start">Steuerberater</text>
+<text x="632" y="494" font-size="11.5" font-weight="400" fill="#71757A" text-anchor="end">Mon</text>
+<text x="276" y="513" font-size="13" font-weight="500" fill="#95989E" text-anchor="start">Re: Unterlagen 2025</text>
+<text x="276" y="531" font-size="12" font-weight="400" fill="#71757A" text-anchor="start">Vielen Dank, ich habe alles erhalten und…</text>
+<text x="680" y="52" font-size="20" font-weight="700" fill="#DDDEE0" text-anchor="start">Rechnung Juli 2026</text>
+<circle cx="697" cy="82" r="17" fill="#0BA4BC"/>
+<text x="697" y="88" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">S</text>
+<text x="726" y="78" font-size="13.5" font-weight="600" fill="#DDDEE0" text-anchor="start">Stephan Auner</text>
+<text x="726" y="95" font-size="12.5" font-weight="400" fill="#71757A" text-anchor="start">stephan@auner.info · Stephan Auner</text>
+<text x="1168" y="82" font-size="12.5" font-weight="400" fill="#71757A" text-anchor="end">22 Jul 2026, 16:41</text>
+<rect x="680" y="120" width="28" height="28" rx="8" fill="none" stroke="#3B3E43" stroke-width="1"/>
+<rect x="716" y="120" width="28" height="28" rx="8" fill="none" stroke="#3B3E43" stroke-width="1"/>
+<rect x="752" y="120" width="28" height="28" rx="8" fill="none" stroke="#3B3E43" stroke-width="1"/>
+<rect x="680" y="176" width="442" height="9" rx="4.5" fill="#3B3E43"/>
+<rect x="680" y="198" width="413" height="9" rx="4.5" fill="#3B3E43"/>
+<rect x="680" y="220" width="466" height="9" rx="4.5" fill="#3B3E43"/>
+<rect x="680" y="242" width="336" height="9" rx="4.5" fill="#3B3E43"/>
+<rect x="680" y="286" width="432" height="9" rx="4.5" fill="#3B3E43"/>
+<rect x="680" y="308" width="398" height="9" rx="4.5" fill="#3B3E43"/>
+<rect x="680" y="330" width="288" height="9" rx="4.5" fill="#3B3E43"/>
+<line x1="648" y1="688" x2="1200" y2="688" stroke="#3B3E43" stroke-width="1"/>
+<rect x="680" y="704" width="71.5" height="32" rx="16" fill="none" stroke="#3B3E43" stroke-width="1"/>
+<text x="715.75" y="725" font-size="13" font-weight="600" fill="#DDDEE0" text-anchor="middle">Reply</text>
+<rect x="761.5" y="704" width="86.5" height="32" rx="16" fill="none" stroke="#3B3E43" stroke-width="1"/>
+<text x="804.75" y="725" font-size="13" font-weight="600" fill="#DDDEE0" text-anchor="middle">Forward</text>
+<rect x="858" y="704" width="86.5" height="32" rx="16" fill="none" stroke="#3B3E43" stroke-width="1"/>
+<text x="901.25" y="725" font-size="13" font-weight="600" fill="#DDDEE0" text-anchor="middle">Archive</text>
+</svg>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1348" height="698" viewBox="0 0 1348 698" font-family="Inter, Arial, sans-serif">
+<rect width="1348" height="698" fill="#ffffff"/>
+<text x="32" y="48" font-size="24" font-weight="700" fill="#111">Barua — theme lightness ramps</text>
+<text x="32" y="72" font-size="13" fill="#666">9 steps per tint (step 0 = white, step 8 = darkest). Chroma = peak·sin(π·i/9), gamut-clamped.</text>
+<text x="194" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 0</text>
+<text x="326" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 1</text>
+<text x="458" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 2</text>
+<text x="590" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 3</text>
+<text x="722" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 4</text>
+<text x="854" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 5</text>
+<text x="986" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 6</text>
+<text x="1118" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 7</text>
+<text x="1250" y="100" font-size="12" font-weight="600" fill="#999" text-anchor="middle">step 8</text>
+<text x="32" y="170" font-size="15" font-weight="700" fill="#222" dominant-baseline="middle">Neutral</text>
+<text x="32" y="188" font-size="11" fill="#999" dominant-baseline="middle">hue 260</text>
+<rect x="128" y="122" width="132" height="96" fill="#FCFCFC" stroke="#e2e2e2" stroke-width="1"/>
+<text x="194" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#FCFCFC</text>
+<rect x="260" y="122" width="132" height="96" fill="#DDDEE0"/>
+<text x="326" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#DDDEE0</text>
+<rect x="392" y="122" width="132" height="96" fill="#BBBEC2"/>
+<text x="458" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#BBBEC2</text>
+<rect x="524" y="122" width="132" height="96" fill="#95989E"/>
+<text x="590" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#95989E</text>
+<rect x="656" y="122" width="132" height="96" fill="#71757A"/>
+<text x="722" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#71757A</text>
+<rect x="788" y="122" width="132" height="96" fill="#4F5358"/>
+<text x="854" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#4F5358</text>
+<rect x="920" y="122" width="132" height="96" fill="#303337"/>
+<text x="986" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#303337</text>
+<rect x="1052" y="122" width="132" height="96" fill="#1D1F22"/>
+<text x="1118" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#1D1F22</text>
+<rect x="1184" y="122" width="132" height="96" fill="#0F0F11"/>
+<text x="1250" y="235" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#0F0F11</text>
+<text x="32" y="314" font-size="15" font-weight="700" fill="#222" dominant-baseline="middle">Sand</text>
+<text x="32" y="332" font-size="11" fill="#999" dominant-baseline="middle">hue 80</text>
+<rect x="128" y="266" width="132" height="96" fill="#FCFCFC" stroke="#e2e2e2" stroke-width="1"/>
+<text x="194" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#FCFCFC</text>
+<rect x="260" y="266" width="132" height="96" fill="#E1DDD7"/>
+<text x="326" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#E1DDD7</text>
+<rect x="392" y="266" width="132" height="96" fill="#C4BDB1"/>
+<text x="458" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#C4BDB1</text>
+<rect x="524" y="266" width="132" height="96" fill="#A09788"/>
+<text x="590" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#A09788</text>
+<rect x="656" y="266" width="132" height="96" fill="#7D7363"/>
+<text x="722" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#7D7363</text>
+<rect x="788" y="266" width="132" height="96" fill="#5B5141"/>
+<text x="854" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#5B5141</text>
+<rect x="920" y="266" width="132" height="96" fill="#393225"/>
+<text x="986" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#393225</text>
+<rect x="1052" y="266" width="132" height="96" fill="#241E16"/>
+<text x="1118" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#241E16</text>
+<rect x="1184" y="266" width="132" height="96" fill="#120F0B"/>
+<text x="1250" y="379" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#120F0B</text>
+<text x="32" y="458" font-size="15" font-weight="700" fill="#222" dominant-baseline="middle">Aubergine</text>
+<text x="32" y="476" font-size="11" fill="#999" dominant-baseline="middle">hue 340</text>
+<rect x="128" y="410" width="132" height="96" fill="#FCFCFC" stroke="#e2e2e2" stroke-width="1"/>
+<text x="194" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#FCFCFC</text>
+<rect x="260" y="410" width="132" height="96" fill="#E6DAE1"/>
+<text x="326" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#E6DAE1</text>
+<rect x="392" y="410" width="132" height="96" fill="#CCB6C4"/>
+<text x="458" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#CCB6C4</text>
+<rect x="524" y="410" width="132" height="96" fill="#AB8FA0"/>
+<text x="590" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#AB8FA0</text>
+<rect x="656" y="410" width="132" height="96" fill="#886A7D"/>
+<text x="722" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#886A7D</text>
+<rect x="788" y="410" width="132" height="96" fill="#65485B"/>
+<text x="854" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#65485B</text>
+<rect x="920" y="410" width="132" height="96" fill="#412A39"/>
+<text x="986" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#412A39</text>
+<rect x="1052" y="410" width="132" height="96" fill="#291924"/>
+<text x="1118" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#291924</text>
+<rect x="1184" y="410" width="132" height="96" fill="#140D12"/>
+<text x="1250" y="523" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#140D12</text>
+<text x="32" y="602" font-size="15" font-weight="700" fill="#222" dominant-baseline="middle">Steel</text>
+<text x="32" y="620" font-size="11" fill="#999" dominant-baseline="middle">hue 245</text>
+<rect x="128" y="554" width="132" height="96" fill="#FCFCFC" stroke="#e2e2e2" stroke-width="1"/>
+<text x="194" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#FCFCFC</text>
+<rect x="260" y="554" width="132" height="96" fill="#D8DFE5"/>
+<text x="326" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#D8DFE5</text>
+<rect x="392" y="554" width="132" height="96" fill="#B3BFCA"/>
+<text x="458" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#B3BFCA</text>
+<rect x="524" y="554" width="132" height="96" fill="#8B9BA9"/>
+<text x="590" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#8B9BA9</text>
+<rect x="656" y="554" width="132" height="96" fill="#657786"/>
+<text x="722" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#657786</text>
+<rect x="788" y="554" width="132" height="96" fill="#445563"/>
+<text x="854" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#445563</text>
+<rect x="920" y="554" width="132" height="96" fill="#273540"/>
+<text x="986" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#273540</text>
+<rect x="1052" y="554" width="132" height="96" fill="#172028"/>
+<text x="1118" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#172028</text>
+<rect x="1184" y="554" width="132" height="96" fill="#0B1014"/>
+<text x="1250" y="667" font-size="12.5" font-weight="600" fill="#333" text-anchor="middle" font-family="monospace">#0B1014</text>
+</svg>

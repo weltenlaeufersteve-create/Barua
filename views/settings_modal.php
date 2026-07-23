@@ -246,8 +246,10 @@
     <div class="settings-panel" data-panel="security">
       <div class="set-panel-head">
         <h3 class="set-panel-title">Security</h3>
-        <p class="set-panel-desc">Every sign-in attempt to Barua — successful, failed, or blocked by rate-limiting — with when, where and what.</p>
+        <p class="set-panel-desc">Sign-in attempts and sensitive actions — with when, where and what.</p>
       </div>
+
+      <div class="set-subhead">Sign-in attempts</div>
       <?php $loginLog = \Barua\Auth\Auth::recentLoginAttempts(100); ?>
       <?php if (empty($loginLog)): ?>
         <p style="color: var(--text-tertiary);">No sign-in attempts recorded yet.</p>
@@ -259,6 +261,37 @@
               <div class="set-log__main">
                 <div class="set-log__top"><span class="set-log__time"><?= htmlspecialchars($a['time']) ?></span><span class="set-log__ip"><?= htmlspecialchars($a['xff'] !== '' ? $a['xff'] : $a['ip']) ?></span></div>
                 <div class="set-log__meta">user <strong><?= htmlspecialchars($a['user']) ?></strong> · <?= htmlspecialchars($a['ua'] !== '' ? $a['ua'] : 'unknown device') ?></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <div class="set-subhead" style="margin-top:22px;">Activity</div>
+      <?php
+        $activityLog = \Barua\Security\ActivityLog::recent(100);
+        // action token → [badge label, badge modifier, human sentence prefix]
+        $actMap = [
+            'empty'          => ['Emptied',  'danger',  'Emptied '],
+            'account_add'    => ['Account',  'success', 'Added account '],
+            'account_edit'   => ['Account',  'neutral', 'Edited account '],
+            'account_remove' => ['Account',  'danger',  'Removed account '],
+            'logout'         => ['Sign-out', 'neutral', 'Signed out'],
+        ];
+      ?>
+      <?php if (empty($activityLog)): ?>
+        <p style="color: var(--text-tertiary);">No activity recorded yet.</p>
+      <?php else: ?>
+        <div class="set-log">
+          <?php foreach ($activityLog as $a):
+            [$badge, $mod, $prefix] = $actMap[$a['action']] ?? [ucfirst($a['action']), 'neutral', $a['action'] . ' '];
+            $sentence = $prefix . $a['detail'];
+          ?>
+            <div class="set-log__row">
+              <span class="set-log__badge set-log__badge--<?= htmlspecialchars($mod) ?>"><?= htmlspecialchars($badge) ?></span>
+              <div class="set-log__main">
+                <div class="set-log__top"><span class="set-log__time"><?= htmlspecialchars($a['time']) ?></span><span class="set-log__ip"><?= htmlspecialchars($a['xff'] !== '' ? $a['xff'] : $a['ip']) ?></span></div>
+                <div class="set-log__meta"><?= htmlspecialchars($sentence) ?></div>
               </div>
             </div>
           <?php endforeach; ?>

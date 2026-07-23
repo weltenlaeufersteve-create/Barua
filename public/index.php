@@ -512,6 +512,7 @@ if ($path === '/accounts' && $method === 'POST') {
 
     $newId = AccountRepository::create($data);
     \Barua\Accounts\GravatarService::ensure($newId, $data['email']);
+    \Barua\Security\ActivityLog::log('account_add', $data['label'] . ' <' . $data['email'] . '>');
     header('Location: /?settings=accounts');
     return;
 }
@@ -538,6 +539,7 @@ if (preg_match('#^/accounts/(\d+)$#', $path, $m) && $method === 'POST') {
     if ($existing && $existing['email'] !== $data['email']) {
         \Barua\Accounts\GravatarService::ensure($accountId, $data['email']);
     }
+    \Barua\Security\ActivityLog::log('account_edit', $data['label'] . ' <' . $data['email'] . '>');
     header('Location: /?settings=accounts');
     return;
 }
@@ -624,7 +626,11 @@ if (preg_match('#^/accounts/(\d+)/delete$#', $path, $m) && $method === 'POST') {
         echo 'Invalid request.';
         return;
     }
+    $removed = AccountRepository::find((int) $m[1]);
     AccountRepository::delete((int) $m[1]);
+    if ($removed) {
+        \Barua\Security\ActivityLog::log('account_remove', $removed['label'] . ' <' . $removed['email'] . '>');
+    }
     header('Location: /accounts');
     return;
 }

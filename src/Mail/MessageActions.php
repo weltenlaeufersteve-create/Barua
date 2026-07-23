@@ -208,6 +208,16 @@ class MessageActions
         }
         Database::connection()->prepare($sql)->execute($params);
 
+        // Audit trail for the irreversible bulk delete (Settings → Security → Activity).
+        $scopeLabel = $accountId !== null
+            ? (($accounts[0]['label'] ?? 'account'))
+            : 'all accounts';
+        \Barua\Security\ActivityLog::log(
+            'empty',
+            ucfirst($role) . ' · ' . $scopeLabel . ' · ' . $deleted . ' message' . ($deleted === 1 ? '' : 's')
+            . ($errors ? ' · with errors' : '')
+        );
+
         if ($errors) {
             return ['ok' => false, 'error' => implode('; ', $errors), 'deleted' => $deleted];
         }
