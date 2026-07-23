@@ -405,6 +405,27 @@ if (preg_match('#^/messages/(\d+)/(pin|archive|trash|spam|read|group)$#', $path,
     return;
 }
 
+// Empty a whole Trash/Spam folder (permanent). Scope follows the ?account param like the
+// views: a single account, or all accounts when absent. Destructive + irreversible — the
+// client asks for confirmation first; the role guard lives in MessageActions::emptyRole.
+if ($path === '/messages/empty' && $method === 'POST') {
+    header('Content-Type: application/json');
+    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        return;
+    }
+    session_write_close(); // slow IMAP round-trip; nothing below writes to the session
+    $role = (string) ($_POST['role'] ?? '');
+    $account = isset($_POST['account']) && $_POST['account'] !== '' ? (int) $_POST['account'] : null;
+    $result = \Barua\Mail\MessageActions::emptyRole($role, $account);
+    if (!$result['ok']) {
+        http_response_code(422);
+    }
+    echo json_encode($result);
+    return;
+}
+
 if ($path === '/sync' && $method === 'POST') {
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
         http_response_code(403);

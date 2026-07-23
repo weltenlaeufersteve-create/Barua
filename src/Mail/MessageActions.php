@@ -113,6 +113,67 @@ class MessageActions
         return self::moveToRole($messageId, 'spam');
     }
 
+    /**
+     * Permanently empty a Trash or Spam folder for the accounts in scope (one account, or
+     * all when $accountId is null). Flags every message in the folder \Deleted and expunges
+     * on the server — irreversible — then clears the matching cache rows. Guarded to those
+     * two roles only: inbox/archive/sent must never be mass-purged from here. Per-account
+     * try/catch so one unreachable account doesn't abort the rest (mirrors syncAll).
+     *
+     * @return array{ok: bool, deleted?: int, error?: string}
+     */
+    public static function emptyRole(string $role, ?int $accountId = null): array
+    {
+        if (!in_array($role, ['trash', 'spam'], true)) {
+            return ['ok' => false, 'error' => 'Only Trash and Spam can be emptied'];
+        }
+
+        $accounts = $accountId !== null
+            ? array_values(array_filter([AccountRepository::find($accountId)]))
+            : AccountRepository::all();
+
+        $deleted = 0;
+        $errors = [];
+        foreach ($accounts as $account) {
+            try {
+                $client = SyncService::makeClient($account);
+                $client->connect();
+                $target = FolderResolver::find($client, $role);
+                if ($target === null) {
+                    $client->disconnect();
+                    continue; // this account has no such folder — nothing to empty
+                }
+                $folder = $client->getFolderByPath($target->path);
+                // Whole folder, not just the sync window — "empty" means empty. Headers only
+                // (no body) keep it light; one expunge at the end instead of per message.
+                $messages = $folder->query()->setFetchBody(false)->setFetchFlags(false)->get();
+                foreach ($messages as $message) {
+                    $message->setFlag('Deleted');
+                    $deleted++;
+                }
+                $client->expunge();
+                $client->disconnect();
+            } catch (\Throwable $e) {
+                $errors[] = ($account['label'] ?? 'account') . ': ' . $e->getMessage();
+            }
+        }
+
+        // Clear the cache for this role + scope. Safe even if a server-side expunge failed:
+        // the next sync re-pulls whatever is genuinely still in the folder (self-healing).
+        $sql = 'DELETE FROM messages WHERE folder_role = ?';
+        $params = [$role];
+        if ($accountId !== null) {
+            $sql .= ' AND account_id = ?';
+            $params[] = $accountId;
+        }
+        Database::connection()->prepare($sql)->execute($params);
+
+        if ($errors) {
+            return ['ok' => false, 'error' => implode('; ', $errors), 'deleted' => $deleted];
+        }
+        return ['ok' => true, 'deleted' => $deleted];
+    }
+
     private static function moveToRole(int $messageId, string $role): array
     {
         [$row, $account] = self::load($messageId);

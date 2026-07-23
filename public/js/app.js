@@ -97,6 +97,50 @@
       }
     }
 
+    // In-app replacement for window.confirm() — a small consistent modal instead of the
+    // browser's native dialog. Resolves via callbacks; one dialog element reused for all.
+    var confirmOverlay = document.getElementById('confirm-overlay');
+    var confirmTitleEl = document.getElementById('confirm-title');
+    var confirmTextEl = document.getElementById('confirm-text');
+    var confirmOkBtn = document.getElementById('confirm-ok');
+    var confirmCancelBtn = document.getElementById('confirm-cancel');
+    var confirmOnOk = null;
+    function closeConfirm() {
+      if (!confirmOverlay) return;
+      confirmOverlay.classList.remove('is-open');
+      confirmOverlay.setAttribute('aria-hidden', 'true');
+      confirmOnOk = null;
+    }
+    function baruaConfirm(opts) {
+      if (!confirmOverlay) { // fallback if the dialog markup is missing
+        if (window.confirm(opts.text)) opts.onConfirm();
+        return;
+      }
+      confirmTitleEl.textContent = opts.title || 'Are you sure?';
+      confirmTextEl.textContent = opts.text || '';
+      confirmOkBtn.textContent = opts.confirmLabel || 'Confirm';
+      confirmOkBtn.classList.toggle('pill--danger', !!opts.danger);
+      confirmOnOk = opts.onConfirm || null;
+      confirmOverlay.classList.add('is-open');
+      confirmOverlay.setAttribute('aria-hidden', 'false');
+      confirmOkBtn.focus();
+    }
+    if (confirmOverlay) {
+      confirmCancelBtn.addEventListener('click', closeConfirm);
+      confirmOkBtn.addEventListener('click', function () {
+        var fn = confirmOnOk;
+        closeConfirm();
+        if (fn) fn();
+      });
+      // Click on the dim backdrop or Escape cancels — same affordances as the other overlays.
+      confirmOverlay.addEventListener('click', function (e) {
+        if (e.target === confirmOverlay) closeConfirm();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && confirmOverlay.classList.contains('is-open')) closeConfirm();
+      });
+    }
+
     function showReaderBody(msg) {
       setReaderPin(msg.pinned);
       var plain = document.getElementById('reader-body');
@@ -735,6 +779,42 @@
         .then(function () { pollStream(); })
         .catch(function () {})
         .finally(function () { syncBtn.classList.remove('spinning'); });
+    });
+
+    // Empty Trash/Spam — permanent, so it always confirms first (with the visible count +
+    // scope), then reloads so the list, sidebar badges and empty state all come back in
+    // step from the server rather than being hand-patched.
+    var emptyBtn = document.getElementById('empty-folder');
+    if (emptyBtn) emptyBtn.addEventListener('click', function () {
+      if (emptyBtn.disabled) return;
+      var count = parseInt(emptyBtn.dataset.count, 10) || 0;
+      var label = emptyBtn.dataset.label;   // "Trash" / "Spam"
+      var scope = emptyBtn.dataset.scope;   // account label or "all accounts"
+      baruaConfirm({
+        title: 'Empty ' + label,
+        text: 'Permanently delete ' + count + ' message' + (count === 1 ? '' : 's')
+          + ' in ' + label + ' (' + scope + ').\n\nThis cannot be undone.',
+        confirmLabel: 'Empty ' + label,
+        danger: true,
+        onConfirm: function () {
+          emptyBtn.disabled = true;
+          var body = new URLSearchParams();
+          body.set('csrf_token', mainCsrf);
+          body.set('role', emptyBtn.dataset.role);
+          body.set('account', emptyBtn.dataset.account); // '' = all accounts
+          fetch('/messages/empty', { method: 'POST', body: body })
+            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+            .then(function (res) {
+              if (res.ok) { window.location.reload(); return; }
+              emptyBtn.disabled = false;
+              window.alert('Could not empty ' + label + ': ' + (res.error || 'unknown error'));
+            })
+            .catch(function () {
+              emptyBtn.disabled = false;
+              window.alert('Network error while emptying ' + label + '.');
+            });
+        }
+      });
     });
 
     // Gentle background heartbeat (cron only produces mail every ~3 min) + instant catch-up

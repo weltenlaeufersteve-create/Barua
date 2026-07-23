@@ -324,6 +324,18 @@
 }
 .icon-btn:hover { background: var(--hover-bg); }
 
+/* Empty Trash/Spam — the one destructive button in the list header. Red at rest (so it
+   reads as "danger" before you even hover), deeper red tint on hover; disabled + muted
+   when the folder is already empty. */
+.icon-btn--danger { color: var(--danger); }
+.icon-btn--danger:hover { background: color-mix(in oklch, var(--danger) 16%, transparent); }
+.icon-btn--danger:disabled {
+  color: var(--text-tertiary);
+  opacity: 0.4;
+  cursor: default;
+}
+.icon-btn--danger:disabled:hover { background: transparent; }
+
 .mail-list__date-group {
   font-size: 11px;
   font-weight: 600;
@@ -880,6 +892,39 @@
 /* Icon + label pills (Reply/Forward/Archive) — icons follow the label colour. */
 .pill { display: inline-flex; align-items: center; gap: 7px; }
 .pill .sidebar__icon { width: 15px; height: 15px; color: inherit; }
+
+/* Danger pill — the confirming action button in the confirm dialog. Solid --danger fill
+   so the destructive choice is unmistakable, distinct from the neutral Cancel pill. */
+.pill--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.pill--danger:hover { background: var(--danger); filter: brightness(1.08); }
+
+/* Confirm dialog — same overlay + card language as the settings modal, sized small. */
+.confirm-overlay {
+  position: fixed; inset: 0;
+  background: var(--overlay);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200; /* above settings (100) and the composer */
+  padding: 20px;
+}
+.confirm-overlay.is-open { display: flex; }
+.confirm-modal {
+  width: 400px;
+  max-width: 100%;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  padding: 24px;
+}
+.confirm-modal__title { font-size: 16px; font-weight: 700; margin: 0 0 10px; color: var(--text-primary); }
+.confirm-modal__text { font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin: 0 0 22px; white-space: pre-line; }
+.confirm-modal__actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 /* Drawer scrim and the floating buttons exist only in the mobile layout. */
 .sidebar-scrim { display: none; }

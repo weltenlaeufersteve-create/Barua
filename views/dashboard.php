@@ -236,6 +236,21 @@ $sel = $selected ?? [
           </div>
         </div>
         <div class="mail-list__icons">
+          <?php if ($view === 'trash' || $view === 'spam'):
+            $emptyCount = MessageRepository::roleCount($view, $activeAccountId);
+            $emptyScope = $activeAccount ? $activeAccount['label'] : 'all accounts';
+          ?>
+          <button type="button" class="icon-btn icon-btn--danger" id="empty-folder"
+                  title="Empty <?= ucfirst($view) ?>"
+                  data-role="<?= htmlspecialchars($view) ?>"
+                  data-account="<?= $activeAccountId !== null ? (int) $activeAccountId : '' ?>"
+                  data-count="<?= (int) $emptyCount ?>"
+                  data-label="<?= htmlspecialchars(ucfirst($view)) ?>"
+                  data-scope="<?= htmlspecialchars($emptyScope) ?>"
+                  <?= $emptyCount === 0 ? 'disabled' : '' ?>>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          </button>
+          <?php endif; ?>
           <div class="icon-btn" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
           <button type="button" id="sync-now" class="icon-btn" title="Sync now"><svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
           <div class="icon-btn" title="Compose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
@@ -414,6 +429,19 @@ $sel = $selected ?? [
 
   <?php require __DIR__ . '/settings_modal.php'; ?>
   <?php require __DIR__ . '/compose.php'; ?>
+
+  <!-- Generic confirm dialog (replaces the browser's native confirm()). Text + the
+       action button's label/danger styling are filled in by app.js per use. -->
+  <div class="confirm-overlay" id="confirm-overlay" aria-hidden="true">
+    <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h2 class="confirm-modal__title" id="confirm-title"></h2>
+      <p class="confirm-modal__text" id="confirm-text"></p>
+      <div class="confirm-modal__actions">
+        <button type="button" class="pill" id="confirm-cancel">Cancel</button>
+        <button type="button" class="pill" id="confirm-ok"></button>
+      </div>
+    </div>
+  </div>
 
   <?php // ---- JS bootstrap: all PHP-interpolated state lives here; external modules read window.Barua ---- ?>
   <script>
