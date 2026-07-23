@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   smtp_password_enc TEXT NOT NULL,
   signature TEXT,
   signature_id INT NULL,
+  avatar_state ENUM('unknown','has','none') NOT NULL DEFAULT 'unknown',
   is_active TINYINT(1) DEFAULT 1,
   last_synced_at DATETIME NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP

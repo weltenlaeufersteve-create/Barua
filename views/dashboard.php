@@ -174,7 +174,7 @@ $sel = $selected ?? [
 
       <?php foreach ($accounts as $acc): ?>
         <a href="<?= htmlspecialchars($urlAccount((int) $acc['id'])) ?>" data-account="<?= (int) $acc['id'] ?>" class="sidebar__item<?= $activeAccount && (int) $activeAccount['id'] === (int) $acc['id'] ? ' is-active' : '' ?>">
-          <span class="account-avatar" style="background: <?= htmlspecialchars($acc['colour']) ?>"><?= htmlspecialchars(mb_strtoupper(mb_substr($acc['label'], 0, 1))) ?></span>
+          <span class="account-avatar" style="background: <?= htmlspecialchars($acc['colour']) ?>; border-color: <?= htmlspecialchars($acc['colour']) ?>"><?php if (($acc['avatar_state'] ?? 'unknown') === 'has'): ?><img src="/avatars/<?= (int) $acc['id'] ?>" alt=""><?php else: ?><?= htmlspecialchars(mb_strtoupper(mb_substr($acc['label'], 0, 1))) ?><?php endif; ?></span>
           <?= htmlspecialchars($acc['label']) ?>
           <?php if ((int) $acc['unread'] > 0): ?>
             <span class="sidebar__count"><?= (int) $acc['unread'] ?></span>

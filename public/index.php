@@ -355,6 +355,29 @@ if (preg_match('#^/attachments/(\d+)$#', $path, $m) && $method === 'GET') {
     return;
 }
 
+if (preg_match('#^/avatars/(\d+)$#', $path, $m) && $method === 'GET') {
+    $accountId = (int) $m[1];
+    $account = AccountRepository::find($accountId);
+    $full = $account && $account['avatar_state'] === 'has'
+        ? \Barua\Accounts\GravatarService::cachedPath($accountId)
+        : null;
+    if (!$full || !is_file($full)) {
+        http_response_code(404);
+        return;
+    }
+    // Gravatar doesn't actually transcode to the extension appended to the request URL
+    // (a cached image may be PNG or JPEG regardless) — detect the real type rather than
+    // assume, especially since nosniff below would otherwise fight a wrong declared type.
+    header('Content-Type: ' . (mime_content_type($full) ?: 'application/octet-stream'));
+    header('Content-Length: ' . filesize($full));
+    // Gravatar image changes are rare and only re-checked when the account email is
+    // edited, so a day of client caching is safe and cuts repeat requests.
+    header('Cache-Control: private, max-age=86400');
+    header('X-Content-Type-Options: nosniff');
+    readfile($full);
+    return;
+}
+
 if (preg_match('#^/messages/(\d+)/(pin|archive|trash|spam|read|group)$#', $path, $m) && $method === 'POST') {
     header('Content-Type: application/json');
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
@@ -450,7 +473,8 @@ if ($path === '/accounts' && $method === 'POST') {
         return;
     }
 
-    AccountRepository::create($data);
+    $newId = AccountRepository::create($data);
+    \Barua\Accounts\GravatarService::ensure($newId, $data['email']);
     header('Location: /?settings=accounts');
     return;
 }
@@ -469,7 +493,14 @@ if (preg_match('#^/accounts/(\d+)$#', $path, $m) && $method === 'POST') {
         $data[$f] = trim($_POST[$f] ?? '');
     }
     $data['signature_id'] = $_POST['signature_id'] ?? null;
-    AccountRepository::update((int) $m[1], $data);
+    $accountId = (int) $m[1];
+    $existing = AccountRepository::find($accountId);
+    AccountRepository::update($accountId, $data);
+    // Re-lookup only when the email actually changed — a fresh save with the same
+    // address shouldn't hit Gravatar again on every edit.
+    if ($existing && $existing['email'] !== $data['email']) {
+        \Barua\Accounts\GravatarService::ensure($accountId, $data['email']);
+    }
     header('Location: /?settings=accounts');
     return;
 }

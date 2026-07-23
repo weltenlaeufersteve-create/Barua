@@ -30,8 +30,12 @@
         <div class="set-account-block" data-account-id="<?= (int) $sa['id'] ?>">
         <div class="set-account" data-account="<?= (int) $sa['id'] ?>">
           <span class="set-drag-handle" title="Drag to reorder"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg></span>
-          <div class="set-account__avatar" data-avatar style="background: <?= htmlspecialchars($sa['colour']) ?>">
-            <?= htmlspecialchars(mb_strtoupper(mb_substr($sa['label'], 0, 1))) ?>
+          <div class="set-account__avatar" data-avatar style="background: <?= htmlspecialchars($sa['colour']) ?>; border-color: <?= htmlspecialchars($sa['colour']) ?>">
+            <?php if (($sa['avatar_state'] ?? 'unknown') === 'has'): ?>
+              <img src="/avatars/<?= (int) $sa['id'] ?>" alt="">
+            <?php else: ?>
+              <?= htmlspecialchars(mb_strtoupper(mb_substr($sa['label'], 0, 1))) ?>
+            <?php endif; ?>
           </div>
           <div class="set-account__info">
             <strong><?= htmlspecialchars($sa['label']) ?></strong>

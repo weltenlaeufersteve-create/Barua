@@ -67,7 +67,9 @@
               dd.querySelectorAll('.set-swatch').forEach(function (s) { s.classList.remove('is-active'); });
               swatch.classList.add('is-active');
               ball.style.background = colour;
-              row.querySelector('[data-avatar]').style.background = colour;
+              var avatarEl = row.querySelector('[data-avatar]');
+              avatarEl.style.background = colour;
+              avatarEl.style.borderColor = colour;
               dd.classList.remove('is-open');
               recolourAccount(accountId, colour);
             });
@@ -152,7 +154,7 @@
 
     function recolourAccount(accountId, colour) {
       var side = document.querySelector('.sidebar__item[data-account="' + accountId + '"] .account-avatar');
-      if (side) side.style.background = colour;
+      if (side) { side.style.background = colour; side.style.borderColor = colour; }
       document.querySelectorAll('.mail-row[data-account="' + accountId + '"] .mail-row__stripe')
         .forEach(function (s) { s.style.background = colour; });
       var ra = document.querySelector('.reader__avatar[data-account="' + accountId + '"]');

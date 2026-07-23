@@ -78,6 +78,13 @@ class AccountRepository
         $stmt->execute([$colour, $id]);
     }
 
+    /** 'unknown' (needs a Gravatar lookup) | 'has' (cached at storage/avatars/{id}.jpg) | 'none'. */
+    public static function setAvatarState(int $id, string $state): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE accounts SET avatar_state = ? WHERE id = ?');
+        $stmt->execute([$state, $id]);
+    }
+
     /**
      * Update connection details. Passwords are only re-encrypted when a non-empty
      * new value is supplied; blank password fields leave the stored secret untouched.

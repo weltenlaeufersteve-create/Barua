@@ -8,6 +8,8 @@
 !/storage/logs/.gitkeep
 /storage/outbox/*
 !/storage/outbox/.gitkeep
+/storage/avatars/*
+!/storage/avatars/.gitkeep
 id_rsa
 id_rsa.pub
 id_ed25519

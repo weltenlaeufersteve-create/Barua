@@ -100,6 +100,11 @@
     width: 34px; height: 34px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid transparent; /* colour set inline per account (border-color) */
+  }
+  .set-account__avatar img {
+    width: 100%; height: 100%; object-fit: cover;
   }
   .set-account__info { flex: 1; min-width: 0; }
   .set-account__info strong { display: block; font-size: 13.5px; color: var(--text-primary); }

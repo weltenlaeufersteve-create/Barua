@@ -108,6 +108,7 @@
   font-size: 11px;
   font-weight: 700;
   overflow: hidden;
+  border: 2px solid transparent; /* colour set inline per account (border-color) */
 }
 .account-avatar img {
   width: 100%;
