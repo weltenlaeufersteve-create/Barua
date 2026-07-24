@@ -251,14 +251,6 @@ $sel = $selected ?? [
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'trash')) ?>" class="sidebar__item<?= $view === 'trash' ? ' is-active' : '' ?>"><?= sidebarIcon('trash') ?> Trash <span class="sidebar__count"><?= MessageRepository::roleCount('trash', $activeAccountId) ?: '' ?></span></a>
       </div>
 
-      <!-- Mobile-only: on desktop the module rail carries Settings + Sign out at its
-           bottom (see .sidebar__footer display rules); the rail is hidden on mobile, so
-           these stay reachable there. -->
-      <div class="sidebar__footer">
-        <div class="sidebar__divider"></div>
-        <div class="sidebar__item js-open-settings"><?= sidebarIcon('settings') ?> Settings</div>
-        <a href="/logout" class="sidebar__item"><?= sidebarIcon('logout') ?> Sign out</a>
-      </div>
     </div>
 
     <!-- Mail list -->

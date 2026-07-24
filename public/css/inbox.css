@@ -81,12 +81,6 @@
   overflow-y: auto;
   padding: 18px 12px 0;
 }
-.sidebar__footer {
-  flex-shrink: 0;
-  padding: 0 12px 12px;
-  background: var(--sidebar-bg);
-  display: none; /* desktop: Settings + Sign out live in the module rail; shown again ≤900px */
-}
 
 .sidebar__title {
   font-size: 15px;
@@ -996,10 +990,18 @@
 @media (max-width: 900px) {
   .app { position: relative; }
 
-  /* The module rail is a desktop affordance; mobile uses the single-column drawer flow,
-     so the rail hides and the sidebar footer (Settings + Sign out) comes back. */
-  .app-rail { display: none; }
-  .sidebar__footer { display: block; }
+  /* The module rail joins the slide-in drawer on mobile, sitting to the LEFT of the
+     sidebar. Both are fixed and translate by the SAME distance (308px = 60 rail + 248
+     sidebar), so they move in together as one unit and are both fully off-screen when
+     closed. ~308px total fits comfortably on typical phones. */
+  .app-rail {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 61;
+    transform: translateX(-308px);
+    transition: transform 0.22s ease;
+  }
+  body[data-mobile-view="sidebar"] .app-rail { transform: translateX(0); }
 
   .mail-list-col,
   .reader-col {
@@ -1014,15 +1016,15 @@
   body[data-mobile-view="list"] .mail-list-col { display: flex; }
   body[data-mobile-view="reader"] .reader-col { display: flex; }
 
-  /* ---- Sidebar as a slide-in drawer, keeping its own width ---- */
+  /* ---- Sidebar as a slide-in drawer, sitting right of the 60px rail ---- */
   .sidebar {
     position: fixed;
     top: 0;
-    left: 0;
+    left: 60px;               /* right of the module rail */
     bottom: 0;
     z-index: 60;
     display: flex;
-    transform: translateX(-100%);
+    transform: translateX(-308px); /* same slide as the rail: both fully off, moving as one */
     transition: transform 0.22s ease;
     box-shadow: 2px 0 18px rgba(0, 0, 0, 0.28);
   }
