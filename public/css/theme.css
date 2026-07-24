@@ -270,28 +270,34 @@
    The reader's light/dark toggle works on every mail, HTML or plain text. A mail can
    therefore be shown dark while the app runs a light theme (and vice versa), so both
    surfaces must exist in every theme. Values are tint-constant (same in the dark and
-   light block of a tint) — always the ramp's step 8 (dark) / step 0 (light) pairing. */
+   light block of a tint) — always the ramp's step 8 (dark) / step 0 (light) pairing.
+   --rail-bg (the far-left module rail) is the same step-8 darkest, kept dark in BOTH
+   modes — an Outlook-style always-dark app rail, even darker than the sidebar (step 7). */
 [data-theme="dark-neutral"], [data-theme="light-neutral"] {
   --mail-dark-bg:  oklch(0.170 0.0034 260);
   --mail-dark-fg:  oklch(0.900 0.0034 260);
   --mail-light-bg: oklch(0.990 0.0000 260);
   --mail-light-fg: oklch(0.240 0.0064 260);
+  --rail-bg:       oklch(0.140 0.0034 260);
 }
 [data-theme="dark-sand"], [data-theme="light-sand"] {
   --mail-dark-bg:  oklch(0.170 0.0096 80);
   --mail-dark-fg:  oklch(0.900 0.0096 80);
   --mail-light-bg: oklch(0.990 0.0000 80);
   --mail-light-fg: oklch(0.240 0.0180 80);
+  --rail-bg:       oklch(0.140 0.0096 80);
 }
 [data-theme="dark-aubergine"], [data-theme="light-aubergine"] {
   --mail-dark-bg:  oklch(0.170 0.0164 340);
   --mail-dark-fg:  oklch(0.900 0.0164 340);
   --mail-light-bg: oklch(0.990 0.0000 340);
   --mail-light-fg: oklch(0.240 0.0309 340);
+  --rail-bg:       oklch(0.140 0.0164 340);
 }
 [data-theme="dark-steel"], [data-theme="light-steel"] {
   --mail-dark-bg:  oklch(0.170 0.0109 245);
   --mail-dark-fg:  oklch(0.900 0.0109 245);
   --mail-light-bg: oklch(0.990 0.0000 245);
   --mail-light-fg: oklch(0.240 0.0206 245);
+  --rail-bg:       oklch(0.140 0.0109 245);
 }

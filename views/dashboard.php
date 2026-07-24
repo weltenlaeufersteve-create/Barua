@@ -162,6 +162,35 @@ $sel = $selected ?? [
   <div class="app">
     <!-- Dims the app behind the mobile sidebar drawer; tap to close. -->
     <div class="sidebar-scrim" id="sidebar-scrim" data-go="list"></div>
+
+    <!-- Far-left module rail (Outlook-style): Mail is the app today; Calendar (CalDAV) and
+         Contacts (CardDAV) are groundwork for future modules — inert for now. -->
+    <nav class="app-rail" aria-label="Modules">
+      <a href="/" class="app-rail__item is-active" title="Mail" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3.5 6.5 8.5 7 8.5-7"/></svg>
+        <span class="app-rail__label">Mail</span>
+      </a>
+      <button type="button" class="app-rail__item is-soon" title="Calendar — coming soon" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2.5" x2="8" y2="6"/><line x1="16" y1="2.5" x2="16" y2="6"/><circle cx="8" cy="13" r="1.15" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="1.15" fill="currentColor" stroke="none"/><circle cx="16" cy="13" r="1.15" fill="currentColor" stroke="none"/><circle cx="8" cy="17" r="1.15" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1.15" fill="currentColor" stroke="none"/><circle cx="16" cy="17" r="1.15" fill="currentColor" stroke="none"/></svg>
+        <span class="app-rail__label">Calendar</span>
+      </button>
+      <button type="button" class="app-rail__item is-soon" title="Contacts — coming soon" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="app-rail__label">Contacts</span>
+      </button>
+
+      <span class="app-rail__spacer"></span>
+
+      <button type="button" class="app-rail__item js-open-settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="app-rail__label">Settings</span>
+      </button>
+      <a href="/logout" class="app-rail__item" title="Sign out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="app-rail__label">Sign out</span>
+      </a>
+    </nav>
+
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar__scroll">
@@ -218,9 +247,12 @@ $sel = $selected ?? [
       <a href="<?= htmlspecialchars($buildUrl($activeAccountId, 'trash')) ?>" class="sidebar__item<?= $view === 'trash' ? ' is-active' : '' ?>"><?= sidebarIcon('trash') ?> Trash <span class="sidebar__count"><?= MessageRepository::roleCount('trash', $activeAccountId) ?: '' ?></span></a>
       </div>
 
+      <!-- Mobile-only: on desktop the module rail carries Settings + Sign out at its
+           bottom (see .sidebar__footer display rules); the rail is hidden on mobile, so
+           these stay reachable there. -->
       <div class="sidebar__footer">
         <div class="sidebar__divider"></div>
-        <div class="sidebar__item" id="open-settings"><?= sidebarIcon('settings') ?> Settings</div>
+        <div class="sidebar__item js-open-settings"><?= sidebarIcon('settings') ?> Settings</div>
         <a href="/logout" class="sidebar__item"><?= sidebarIcon('logout') ?> Sign out</a>
       </div>
     </div>

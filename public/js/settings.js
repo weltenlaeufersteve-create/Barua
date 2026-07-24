@@ -1,9 +1,11 @@
   (function () {
     var overlay = document.getElementById('settings-overlay');
-    var openBtn = document.getElementById('open-settings');
+    // Multiple triggers now (desktop module rail + mobile sidebar footer), so bind by class
+    // instead of a single id — same modal, wherever the gear lives for the current layout.
+    var openBtns = document.querySelectorAll('.js-open-settings');
     var closeBtn = document.getElementById('settings-close');
 
-    if (openBtn) openBtn.addEventListener('click', function () { overlay.classList.add('is-open'); });
+    openBtns.forEach(function (b) { b.addEventListener('click', function () { overlay.classList.add('is-open'); }); });
     closeBtn.addEventListener('click', function () { overlay.classList.remove('is-open'); });
 
     // Reopen the modal on a given tab after a settings round-trip (?settings=<tab>).

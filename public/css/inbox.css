@@ -4,6 +4,61 @@
   overflow: hidden;
 }
 
+/* ---------- Far-left module rail (Outlook-style) ----------
+   Always the darkest surface (--rail-bg, dark in both light and dark themes), one step
+   below the sidebar for a layered look. Mail is active today; Calendar/Contacts are inert
+   placeholders for future modules. Icons a touch larger than the app's 16px icons. */
+.app-rail {
+  width: 60px;
+  flex-shrink: 0;
+  background: var(--rail-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0;
+}
+.app-rail__item {
+  position: relative;
+  width: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 0 6px;
+  color: var(--sidebar-text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.app-rail__item svg { width: 22px; height: 22px; }
+/* Labels under each icon — kept on one line (the rail is sized so the longest, "Calendar",
+   fits at this size); nothing wraps. */
+.app-rail__label { font-size: 9.5px; line-height: 1; white-space: nowrap; letter-spacing: 0.01em; }
+.app-rail__item:hover { color: var(--sidebar-text-primary); background: rgba(255,255,255,0.05); }
+.app-rail__item.is-active { color: var(--sidebar-text-primary); }
+/* Active module indicator: a short accent bar on the rail's left edge, like Outlook.
+   Item is 52px centred in the 60px rail (4px gap), so -4px lands the bar on the rail's
+   left edge — not beyond it, where .app's overflow:hidden would clip it. */
+.app-rail__item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 30px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent-fg);
+}
+.app-rail__item.is-soon { color: var(--sidebar-text-tertiary); opacity: 0.5; cursor: default; }
+.app-rail__item.is-soon:hover { background: transparent; color: var(--sidebar-text-tertiary); }
+/* Pushes the Settings + Sign-out items to the rail's bottom. */
+.app-rail__spacer { flex: 1; }
+
 /* ---------- Sidebar ---------- */
 .sidebar {
   width: 248px;
@@ -30,6 +85,7 @@
   flex-shrink: 0;
   padding: 0 12px 12px;
   background: var(--sidebar-bg);
+  display: none; /* desktop: Settings + Sign out live in the module rail; shown again ≤900px */
 }
 
 .sidebar__title {
@@ -939,6 +995,11 @@
    body[data-mobile-view] ("sidebar" | "list" | "reader"), set by app.js. */
 @media (max-width: 900px) {
   .app { position: relative; }
+
+  /* The module rail is a desktop affordance; mobile uses the single-column drawer flow,
+     so the rail hides and the sidebar footer (Settings + Sign out) comes back. */
+  .app-rail { display: none; }
+  .sidebar__footer { display: block; }
 
   .mail-list-col,
   .reader-col {
